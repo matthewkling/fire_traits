@@ -1,5 +1,8 @@
 
-##### clean up and merge FFE csv files into a single table
+# Matthew Kling
+# January 2016
+
+# this script cleans and merges FFE csv files into a single table
 
 library(dplyr)
 library(tidyr)
@@ -15,7 +18,7 @@ loadUnique <- function(x){
 }
 d <- lapply(f, loadUnique)
 
-# merge traits into a single table
+# merge traits into a one table
 r1 <- full_join(d[[1]], d[[2]])
 r2 <- full_join(d[[3]], d[[5]])
 r <- full_join(r1, r2)
@@ -30,11 +33,11 @@ r <- arrange(r, scientific_name) %>%
                scientific_name = sub("sp.", "spp.", scientific_name),
                scientific_name = sub("\\.\\.", ".", scientific_name)) %>%
         distinct() %>%
-        filter(!is.na(scientific_name),
+        filter(!is.na(scientific_name), # drop unknown spp and spp with zero relevant trait values
                !(is.na(bark_thickness_multiplier) & is.na(wood_density) & is.na(decay_class) & is.na(leaf_longevity)) ) %>%
         select(scientific_name, common_name, bark_thickness_multiplier, wood_density, decay_class, leaf_longevity) %>%
         group_by(scientific_name) %>%
-        summarize_each(funs(avg), -scientific_name, -common_name)
+        summarize_each(funs(avg), -scientific_name, -common_name) # collapse multiple observations into a single species-wide mean
 
 # save
 write.csv(r, "e:/fire_traits/derived_data/FFE_traits_clean.csv", row.names=F)

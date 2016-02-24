@@ -1,5 +1,8 @@
 
-##### distill raw TRY dataset into usable form covering relevant species
+# Matthew Kling
+# January 2016
+
+# this script distills raw TRY dataset into usable form covering relevant species
 
 library(data.table)
 library(dplyr)
