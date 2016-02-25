@@ -1,4 +1,9 @@
 
+# Matthew Kling
+# February 2016
+
+# this script, modified slightly and expanded from FT_GIS.R, generates a map of 2D MDS trait space.
+# it assumes that FT_Database.R has been run and the "vare.mds" object is in memory.
 
 library(sp)
 library(raster)
@@ -46,24 +51,33 @@ traits <- lapply(traits, function(x) sum(x * ba.weighted, na.rm=T) / sum(ba.weig
 traits <- stack(traits)
 traits <- mask(traits, ba.tot)
 
-# experiment with a plot mapping 2d geographic space to 2d ordination space
-library(colormap) # get this using devtools::install_github("matthewkling/colormap")
+
+
+########## experiment with a plot mapping 2d geographic space to 2d ordination space #########
+
+library(colormap) # devtools::install_github("matthewkling/colormap")
 library(ggplot2)
 library(gridExtra)
 library(grid)
-f <- as.data.frame(rasterToPoints(traits))
-colors <- colors2d(f[,c("MDS1", "MDS2")])
 
+# get a hex color value for every raster
+f <- as.data.frame(rasterToPoints(traits))
+colors <- colors2d(f[,c("MDS1", "MDS2")]) 
+
+# geographic plot
 map <- ggplot(f, aes(x, y)) + 
   geom_raster(fill=colors) +
   ggmap::theme_nothing() +
   coord_fixed()
 
+# prep MDS data
 vars <- as.data.frame(vare.mds$species)
 vars$var <- rownames(vars)
 vars$MDS1 <- vars$MDS1 * max(f$MDS1) / max(vars$MDS1) * .8
 vars$MDS2 <- vars$MDS2 * max(f$MDS2) / max(vars$MDS2) * .8
 randos <- sample(nrow(f), 100000)
+
+# MDS plot
 scatter <- ggplot(f[randos,], aes(MDS1, MDS2)) +
   geom_point(color=colors[randos]) +
   geom_segment(data=vars, aes(x=0,y=0,xend=MDS1,yend=MDS2), color="gray75") +
@@ -73,6 +87,7 @@ scatter <- ggplot(f[randos,], aes(MDS1, MDS2)) +
   labs(title="Community trait means\nin species trait space\n\n") +
   theme(text=element_text(size=20), plot.title=element_text(size=35))
 
+# save combo chart
 plot <- arrangeGrob(scatter, map, ncol=2, widths=c(1,1.5))
 png("E:/fire_traits/mds_map.png", width=1500, height=1000)
 grid.draw(plot)
