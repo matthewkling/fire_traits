@@ -97,4 +97,4 @@ st=stack(thickness)
 #weighted.mean(d$Bark_Thickness,w=c(0.1,0.1,0.9))
 thickness.weighted=raster::weighted.mean(x=st,w=sw,na.rm=T) #Calculate the mean bark thickness of each pixel, weighted by the relative abundance of that species in the stand. Takes ~5 minutes
 #vals=getValues(thickness.weighted)
-plot(thickness.weighted,main="Bark thickness (cm) \nweighted by species abundance")
+plot(thickness.weighted,main="Bark thickness (cm) \nweighted by species abundance") #Test annotation here
