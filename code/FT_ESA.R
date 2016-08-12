@@ -1,6 +1,6 @@
 #Jens Stevens stevensjt@gmail.com
-#2/21/16
-#Spatial analyses
+#8/11/16
+#Traits analysis for ESA presentation
 
 library(sp)
 library(raster)
@@ -38,6 +38,13 @@ summary(lm(d$Bark.thickness~d$Plant.height))$r.squared #0.41
 summary(lm(d$Self.pruning~d$Plant.height))$r.squared #0.38
 summary(lm(d$Bark.thickness~d$Self.pruning))$r.squared #0.30
 rownames(d.ord)=d[which(complete.cases(d.ord)),"Code"]$Code
+ggplot(data=d.ord)+
+      geom_point(aes(x=Plant.height,y=Self.pruning))+
+      geom_line(aes(x=Plant.height,y=Self.pruning), stat="smooth",method="lm")+
+      labs(y="Self pruning (1-10 scale)", x="Maximum tree height (m)")+
+      theme_bw()+
+      theme(axis.text=element_text(size=16,color='black'),axis.title=element_text(size=20))
+dev.copy2pdf(file="./figures/ESA/Self.pruning~Plant.height.pdf") 
 
 ####1b. Ordination####
 vare.dis <- vegdist(d.ord)
@@ -67,26 +74,24 @@ sppFileNames.study=paste0("s",d$CodeNum,".img")#Set the basal area filenames for
 ba.rasters.study=list()
 for(r in sppFileNames.study){
   ba.rasters.study[[r]]=
-    raster(paste0("./GIS/LiveBasalAreaRasters/",r))
+  #raster(paste0("./GIS/LiveBasalAreaRasters/",r))
+  raster(paste0("/Users/Jens/Documents/Davis/Post-Doc/FireTraits/FT_Analysis_Original/GIS/LiveBasalAreaRasters/",r)) #For Jens
 }
 sppCodeNums.other=master$CodeNum[which(master$California==1 & !is.na(master$CodeNum) & !master$Code%in%d$Code)] #Get other species codes (not study species) that could be present in the study area. Mostly includes hardwoods.
 sppFileNames.other=paste0("s",sppCodeNums.other,".img")
 ba.rasters.other=list()
 for(r in sppFileNames.other){
   ba.rasters.other[[r]]=
-    raster(paste0("./GIS/LiveBasalAreaRasters/",r))
+  #raster(paste0("./GIS/LiveBasalAreaRasters/",r))
+  raster(paste0("/Users/Jens/Documents/Davis/Post-Doc/FireTraits/FT_Analysis_Original/GIS/LiveBasalAreaRasters/",r)) #For Jens
 }
 
 ####2b: Define extent. Deprecated####
-#One way to define extent is here: www.latlong.net
-MapExtent=data.frame("Longitude"=c(-126.947510,-113.796387),"Latitude"=c(42.000325,32.768800))#California
-#MapExtent=data.frame("Longitude"=c(-120.0423938,-119.9562198),"Latitude"=c(39.0890715,38.8980169))#Tahoe
-coordinates(MapExtent)=c("Longitude","Latitude") 
-sp::proj4string(MapExtent)= CRS("+proj=longlat +ellps=WGS84 +datum=WGS84") 
-MapExtent=spTransform(MapExtent,raster::crs(ba.rasters.study[[1]])) #Reproject extent to be same as basal area raster layers. *The raster layers are Nad83/Conus Albers (EPSG = 5070)
-SP.Extent=as(extent(MapExtent),'SpatialPolygons')#Reclassify the extent as a SpatialPolygons layer for cropping
-crs(SP.Extent)=crs(ba.rasters.study[[1]]) #Assign coordinate system
-#Deprecated above#
+CA = readOGR(dsn="./GIS", layer="CA_Boundary")
+CA <- spTransform(CA, CRS("+init=epsg:5070")) #Put on Nad83/Conus Albers (EPSG = 5070) scale
+#To subset to Lake Tahoe:
+#CA=extent(c(-2065000,-2010000,2025000,2065000))
+#extent(CA)
 
 ####2c: Crop all relevant basal area rasters to the extent of interest####
 #Takes some time. Originally these rasters are for the continental US.
@@ -149,11 +154,12 @@ Sys.time()
 sp.weighted=raster::weighted.mean(x=sp.stack,w=ba.weighted.stack,na.rm=T) #Calculate the CWM self pruning score of each pixel Takes ~5 minutes
 Sys.time()
 fr.weighted=raster::weighted.mean(x=fr.stack,w=ba.weighted.stack,na.rm=T) #Calculate the CWM fire resistance index of each pixel Takes ~6 minutes
+
 Sys.time()
 
 plot(fr.weighted, main=c("Fire resistance index \nweighted by species abundance"),col=rev(colorRampPalette(brewer.pal(11,"Spectral"))(100)))
 plot(CA,add=T)
-dev.copy2pdf(file="./figures/ESA/Fire.resistance statewide.pdf") 
+#dev.copy2pdf(file="./figures/ESA/Fire.resistance statewide.pdf") 
 
 ####3. Process Fire Regime data####
 #3a: Load trait data
@@ -183,9 +189,9 @@ rclmat.frg=data.frame(from=c(-Inf,0.5,1.5,2.5,3.5,4.5,5.5),to=c(0.5,1.5,2.5,3.5,
 ca.frg.reclass=reclassify(ca.frg,as.matrix(rclmat.frg),right=T) #Takes 5 minutes
 Sys.time()
 
-plot(ca.frg.reclass,col=rev(viridis(n=3)),legend.args=list(text='Fire Regime Group', side=4, font=2, line=2.5, cex=0.8))
-plot(CA,add=T)
-dev.copy2pdf(file="./figures/ESA/FRG_statewide.pdf") 
+plot(ca.frg.reclass,col=c("darkgoldenrod2","gray","darkcyan"),legend.args=list(text='Fire Regime Group', side=4, font=2, line=2.5, cex=0.8))
+plot(CA,add=T) 
+#dev.copy2pdf(file="./figures/ESA/FRG_statewide.pdf") 
 
 
 ####4.Analyze the trait data in comparison to the fire regime data.####
@@ -215,22 +221,26 @@ FRI.df.sub=FRI.df[sample(nrow(FRI.df), nrow(FRI.df)*0.01), ]#Subsample 1% of the
 #Plot FRI's
 FRI.df.sub$trait=FRI.df.sub$fr #Change to trait of interest (also change axis label)
 ggplot(FRI.df.sub)+
-  geom_boxplot(aes(x=fri,y=trait,group=fri),notch=T)+ 
-  geom_smooth(aes(x=fri,y=trait),method="lm",col="black")+
+  geom_boxplot(aes(x=fri,y=trait,group=fri),notch=F)+ 
+  geom_line(aes(x=fri,y=trait),stat="smooth",method="lm",col="black")+
   scale_x_log10(breaks=c(5,15,25,35,50,100,200,500))+
   #scale_fill_manual(values = brewer.pal(n=8,name="PuOr"))+ #Need to set fill as factor(fri)
   #scale_fill_distiller(palette="PuOr")+
   annotation_logticks(sides="b")+
-  labs(y="Fire-resistance index (0-1 scale)",x="Median fire return interval")+
-  theme_bw()
+  labs(y="Fire-resistance score \n(FRS; 0-1 scale)",x="Median fire return interval")+
+  theme_bw()+
+  theme(axis.text=element_text(size=14,color='black'),axis.title=element_text(size=18))
 dev.copy2pdf(file="./figures/ESA/Fire.resistance~MFRI.pdf") 
+FRI.m=lm(fr~fri,data=FRI.df.sub)
 
 #Plot FRG's
 FRI.df.sub$trait=FRI.df.sub$fr #Change to trait of interest (also change axis label)
 ggplot(na.omit(FRI.df.sub))+
-  geom_boxplot(aes(x=factor(frg),y=trait),notch=T)+ 
+  geom_boxplot(aes(x=factor(frg,labels=c("1: Frequent \n low-severity", "3: Mod. frequency/ \n severity","5: Infrequent \n high-severity")),y=trait),notch=F)+ 
   #scale_fill_manual(values = brewer.pal(n=8,name="PuOr"))+ #Need to set fill as factor(fri)
   #scale_fill_distiller(palette="PuOr")+
-  labs(y="Fire-resistance index (0-1 scale)",x="Fire Regime Group")+
-  theme_bw()
+  labs(y="Fire-resistance score \n(FRS; 0-1 scale)",x="Fire Regime Group")+
+  theme_bw()+
+  theme(axis.text=element_text(size=14,color='black'),axis.title=element_text(size=18))
 dev.copy2pdf(file="./figures/ESA/Fire.resistance~FRG.pdf") 
+FRI.m=aov(fr~frg,data=FRI.df.sub)
