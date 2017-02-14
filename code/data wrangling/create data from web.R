@@ -14,7 +14,7 @@ master=gs_read(traits_full, ws="Master") #Identify "master" spreadsheet from whi
 
 ####2. Write species list spreadsheet####
 master %>%
-      select(c(ID,CA_ID,Code,Scientific_Name,CodeNum,Generic,Subsp,Western)) %>%
+      select(c(ID,CA_ID,Code,Scientific_Name,CodeNum,Generic,Subsp,Western,California,Gymno)) %>%
       write_csv("./data/species_list.csv")
 
 ####3. Write FFE data spreadsheet####
