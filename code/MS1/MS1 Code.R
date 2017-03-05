@@ -124,3 +124,4 @@ write_rds(ba.rasters.study,"./data/RDS/ba.rasters.study.RDS")
 writeRaster(ba.tot.study,"../large_files/ba.tot.study.tiff")#Large file, write to parent directory.
 
 ####3. Do community-weighting of traits####
+Testing
