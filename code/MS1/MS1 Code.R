@@ -121,6 +121,6 @@ ba.tot.study[ba.tot.study/(ba.tot.study+ba.tot.other)<0.50]=NA #Remove pixels wh
 #Save files to save time in future.
 write_rds(ba.tot.study,"./data/RDS/ba.tot.study.RDS")
 write_rds(ba.rasters.study,"./data/RDS/ba.rasters.study.RDS")
-writeRaster(ba.tot.study,"../large_files/ba.tot.study.tiff")#Large file, write to parent directory.
+writeRaster(ba.tot.study,"../large_files/ba.tot.study.tiff",overwrite=TRUE)#Large file, write to parent directory.
 
 ####3. Do community-weighting of traits####
