@@ -2,6 +2,7 @@ library(tidyverse)
 library(raster)
 library(rgdal)
 library(PerformanceAnalytics)
+library(RColorBrewer)
 ####1. Assemble trait data####
 
 #Calculate mean flammability traits for PICO because working on the species-level
@@ -50,7 +51,7 @@ quants_of_interest =
 wts <- #Weight each quantile variable by its completeness
       d[,quants_of_interest] %>% 
       apply(MARGIN=2,function(x) length(which(!is.na(x)))/length(x))
-d$frc <-
+d$frs <-
       d[,quants_of_interest] %>%
       apply(MARGIN=1, function(x) weighted.mean(x=x, w=wts, na.rm= TRUE) )
 
@@ -116,7 +117,7 @@ Sys.time()
 #Adjust values for total basal area
 ba.tot.study[ba.tot.study>120]=NA #Remove outliers with large BA (just a few pixels from the redwood region)
 ba.tot.study[ba.tot.study==0]=NA #If there is no basal area from any of the focal species, set basal area to NA.
-ba.tot.study[ba.tot.study/(ba.tot.study+ba.tot.other)<0.50]=NA #Remove pixels where the basal area of the study species is less than 50% of the total
+ba.tot.study[ba.tot.study/(ba.tot.study+ba.tot.other)<0.50]=NA #Remove pixels where the combined basal area of all the study species is less than 50% of the total tree basal area
 
 #Save files to save time in future.
 write_rds(ba.tot.study,"./data/RDS/ba.tot.study.RDS")
@@ -124,3 +125,32 @@ write_rds(ba.rasters.study,"./data/RDS/ba.rasters.study.RDS")
 writeRaster(ba.tot.study,"../large_files/ba.tot.study.tiff",overwrite=TRUE)#Large file, write to parent directory.
 
 ####3. Do community-weighting of traits####
+#Takes some time.
+ba.weighted=fr.spp=list() #Create empty lists
+Sys.time()
+for(r in 1:length(sppFileNames.study)){ #For each species, calculate its fraction of stand basal area for each pixel, and create a new raster containing its trait of interest. Takes ~1 hour
+      ba.weighted[[r]]=overlay(ba.rasters.study[[r]],ba.tot.study,fun=function(x,y){return(x/y)}) #Calculate the fraction of stand basal area (study species) comprised by the given species
+      ba.weighted[[r]][is.na(ba.weighted[[r]])]=0 #Any cells where the species is absent, basal area weights should be 0 rather than NA. The NA's come from dividing by NA in the overlay() function above, but the weights where trees are absent should be 0. 
+      #plot(ba.weighted[[r]],main=d$Code[r])
+      fr.spp[[r]]=ba.weighted[[r]] #Create a new raster for the fire resistance score. The initial values will be overwritten.
+      fr.spp[[r]][]=d$frs[r] #Assign every pixel the given species' fire resistance score
+      print(r);print(length(sppFileNames.study))
+      print(Sys.time())
+      gc()
+}
+Sys.time()
+
+ba.weighted.stack=stack(ba.weighted)
+fr.stack=stack(fr.spp)
+
+Sys.time()
+
+fr.weighted=raster::weighted.mean(x=fr.stack,w=ba.weighted.stack,na.rm=T) #Calculate the CWM fire resistance score of each pixel. Takes ~50 minutes
+
+Sys.time()
+
+plot(fr.weighted, main=c("Fire resistance index \nweighted by species abundance"),col=rev(colorRampPalette(brewer.pal(11,"Spectral"))(100)))
+plot(AOI,add=T)
+#dev.copy2pdf(file="./figures/MS1/Fire.resistance statewide.pdf") 
+write_rds(ba.weighted,"./data/RDS/ba.weighted.RDS")
+write_rds(fr.weighted,"./data/RDS/fr.weighted.RDS")
