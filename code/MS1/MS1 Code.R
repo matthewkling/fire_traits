@@ -1,3 +1,5 @@
+##Code for manuscript on the biogeography of fire regimes.## 
+##Jens Stevens; stevensjt@gmail.com##
 library(tidyverse)
 library(raster)
 library(rgdal)
@@ -60,7 +62,7 @@ d$frs <-
 
 #write_csv(d[,c(1,8:ncol(d))],"./manuscript/tables/TableS1.csv")
 
-####3. Look at trait correlations####
+####3. Look at trait correlations (fast)####
 d$log_Bark.thickness=log(d$Bark.Thickness.25.4)
 traits_of_interest <- 
       c("log_Bark.thickness","Plant.height","Self.pruning",
@@ -69,7 +71,7 @@ traits_of_interest <-
 #chart.Correlation(d[,quants_of_interest])
 dev.copy2pdf(file="./figures/MS1/FigS1_trait_correlations.pdf") 
 
-####4. Import and process basal area data####
+####4. Import and process basal area data (slow)####
 #NOTE: This data is from the Forest Service (Wilson et al. 2013; http://www.fs.usda.gov/rds/archive/Product/RDS-2013-0013/). Units are sq ft/ac
 
 #Set the area of interest (AOI). Options include:
@@ -140,7 +142,7 @@ ba.tot.study[ba.tot.study<5]=NA #Filter out "sparse woodlands" by removing stand
 writeRaster(ba.tot.study,"../large_files/ba.tot.study.tif",overwrite=TRUE) #Large file, write to parent directory.
 #ba.tot.study <- raster("../large_files/ba.tot.study.tif") #If importing from file
 
-####5. Do community-weighting of traits####
+####5. Do community-weighting of traits (slow)####
 #Takes some time.
 sppFileNames.study=paste0("s",d$CodeNum,".img") 
 ba.weights=fr.spp=list() #Create empty lists
@@ -183,8 +185,7 @@ dev.copy2pdf(file="./figures/MS1/Fig1_frs_western.pdf")
 #ba.tot.study=raster("../large_files/ba.tot.study.tif")
 #fr.weighted=raster("../large_files/fr.weighted.tif")
 
-
-####6. Process Fire Regime data####
+####6. Process Fire Regime data (fast)####
 
 #Load and plot Fire Return Interval data
 western.fri= raster("./GIS/FRG_Rasters/Western_FRI_Clip_250m.tif") #Load Fire Return Intervals (FRI data). Fast. 250 m resolution (made this aggregation directly in ArcGIS to save time)
@@ -211,7 +212,7 @@ plot(western.frg.reclass,col=c("darkgoldenrod2","gray","darkcyan"),legend.args=l
 plot(AOI,add=T) 
 #dev.copy2pdf(file="./figures/MS1/EDA/FRG_statewide.pdf") 
 
-####7. Set up data frame for analysis####
+####7. Set up data frame for analysis (fast)####
 #Create a points layer for FRG, FRI and FRS data. The resulting objects here are large matrices with a column for x, a column for y, and a column for the extracted value
 frg.pts = rasterToPoints (western.frg.reclass); gc() #Takes 0:30 sec
 dimnames(frg.pts)[[2]][3]="frg"
@@ -255,7 +256,7 @@ sd[which(sd$frs.intf<0.2),"mismatch"]="v.intf" #Vulnerable, intermediate-fire
 sd[which(sd$frs.intf>0.8),"mismatch"]="r.intf" #Resistant, intermediate-fire
 sd[which(sd$frs.inff>0.8),"mismatch"]="r.inff" #Resistant, infrequent-fire
 
-####8.Analyze and plot####
+####8.Analyze and plot (fast)####
 sd.sub=sd[sample(nrow(sd), nrow(sd)*0.01), ]#Subsample 1% of the df (134k cells)
 sd.sub$frg[sd.sub$frg>5|sd.sub$frg==2|sd.sub$frg==4]=NA #Set certain FRG's to NA (e.g. rock, barren; FRG>5). Also remove the FRG 2's and 4's (grasslands and chaparral predominantly).
 table(sd.sub$fri,sd.sub$frg)  #Check that the FRI's mostly make sense with the FRG's (most of the 35 year and less FRI's are in FRG1, most of the 50 and 100 yr FRI's are with FRG 3, and most of the 200+ yr FRI's are with FRG5). Looks good.
@@ -288,7 +289,7 @@ ggplot(sd.sub)+
       theme_bw()+
       theme(axis.text=element_text(size=14,color='black'),axis.title=element_text(size=18))
 dev.copy2pdf(file="./figures/MS1/Fig3_Fire.resistance~FRG.pdf")
-FRI.m=aov(frs~factor(frg),data=sd.sub)
+FRG.m=aov(frs~factor(frg),data=sd.sub)
 TukeyHSD(FRI.m)
 
 #Plot mismatches
