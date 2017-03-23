@@ -104,6 +104,17 @@ ba.tot.study <- raster("../large_files/ba.tot.study.tif")
 ba.tot.other <- calc(ba.rasters.other, sum)
 ba.prop <- ba.tot.study / (ba.tot.study + ba.tot.other)
 
+
+# reclassify FRI
+
+rclmat2 <- data.frame(from=c(-Inf,0,2,4,6,8,11,17,20,22),
+                      to=c(0,2,4,6,8,11,17,20,22,150),
+                      becomes=c(NA,5,15,25,35,50,100,200,500,NA))
+fri <- reclassify(fri, as.matrix(rclmat2), right=T)
+
+
+
+stop("skip this slow, underreveloped chunk of code")
 # basal area rasters
 ba <- stack(list.files("E:/fire_traits/fire_traits/input_data/LiveBasalAreaRasters/", full.names=T))
 
@@ -123,10 +134,10 @@ rs <- crop(rs, frs)
 ba.weighted <- reclassify(rs / ba.tot.study, c(-Inf,0,NA))
 
 # community trait means
-traits <- dplyr::select(spp, Bark_Thickness, Plant.height, ____)
+traits <- spp[,traits_of_interest]
 traits <- lapply(traits, function(x) sum(x * ba.weighted, na.rm=T) / sum(ba.weighted, na.rm=T))
 traits <- stack(traits)
-traits <- mask(traits, ba.tot)
+#####traits <- mask(traits, ba.tot)
 
 
 
@@ -136,25 +147,28 @@ traits <- mask(traits, ba.tot)
 
 #### VISUALIZE
 
-# spatial sync
-frs <- crop(frs, crop(fri, frs))
-fric <- crop(fri, frs)
-frgc <- crop(frg, fri)
-fri <- frs; values(fri) <- values(fric)
-frg <- frs; values(frg) <- values(frgc)
+# spatial sync -- shortcut assumes that raster misalignment is negligible!
+fri_tmp <- fri
+frg_tmp <- fri
+fri <- frs; values(fri) <- values(fri_tmp)
+frg <- frs; values(frg) <- values(frg_tmp)
 
 s <- stack(frs, fri, frg, ba.prop, ba.tot.other + ba.tot.study)
 d <- as.data.frame(rasterToPoints(s))
 names(d) <- c("x", "y", "frs", "fri", "frg", "ba_prop", "ba_tot")
 
-d <- filter(d, !is.na(frs))
+d <- filter(d, !is.na(frs), !is.na(fri))
 
 
 # a regression residuals approach to flagging mismatches
-d$fri[d$fri==0] <- 1
+#d$fri[d$fri==0] <- 1
 fit <- lm(frs~log10(fri), data=d)
 d$mismatch <- fit$residuals
+fit2 <- lm(log10(fri)~frs, data=d)
+d$mismatch2 <- fit2$residuals
 
+#ss <- sample(nrow(d), 10000)
+#cor(d$frs[ss], log(d$fri)[ss], method="kendall", use="complete.obs")
 
 
 
@@ -210,7 +224,7 @@ p <- ggplot() +
                   aes(x, y, fill=fri)) +
       geom_path(data=borders, aes(long, lat, group=group),
                 size=.25) +
-      scale_fill_viridis(option="B", trans="log10", breaks=c(1,3,10,30,100)) +
+      scale_fill_viridis(option="B", trans="log10", breaks=c(1,3,10,30,100,300,1000)) +
       minimalism +
       view +
       guides(fill=guide_colourbar(barwidth=15)) +
@@ -258,7 +272,7 @@ p <- ggplot(sample_n(d, 1000000), aes(fri, frs, color=mismatch)) +
       geom_smooth(method=lm, se=F, color="black") +
       scale_colour_gradientn(colours=c("darkblue", "gray", "gray", "darkred"),
                              limits=max(abs(d$mismatch))*c(-1,1)) +
-      scale_x_log10(breaks=c(1,3,10,30,100)) +
+      scale_x_log10(breaks=c(1,3,10,30,100,300,1000)) +
       theme_minimal() +
       labs(title="FRS vs FRI\n",
            fill="residual") +
@@ -274,5 +288,18 @@ p <- ggplot(data=sample_n(d, 100000), aes(ba_prop, abs(mismatch))) +
       theme_minimal() +
       labs(x="proportion basal area represented")
 ggsave("temp/mismatch_completeness.png", p, width=8, height=8, units="in")
+
+# scatterplot fri ~ frs, color=residual
+p <- ggplot(sample_n(d, 1000000), aes(frs, fri), color="gray") +
+      geom_point() +
+      geom_smooth(method=lm, se=F, color="black") +
+      scale_colour_gradientn(colours=c("darkblue", "gray", "gray", "darkred"),
+                             limits=max(abs(d$mismatch))*c(-1,1)) +
+      scale_y_log10(breaks=c(1,3,10,30,100,300,1000)) +
+      theme_minimal() +
+      labs(title="FRS vs FRI\n",
+           fill="residual") +
+      guides(fill=guide_colourbar(barwidth=15))
+ggsave("temp/fri_frs_scatter.png", p, width=8, height=8, units="in")
 
 
