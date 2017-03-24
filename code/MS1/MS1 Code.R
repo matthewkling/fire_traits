@@ -28,13 +28,13 @@ md=Reduce(function(x, y)
 )
 
 #Choose variables of interest. "25.4" refers to dbh of tree in cm.
-vars_of_interest = c("Scientific_Name","Code","CodeNum","California","Western","Gymno","Has_BA",
-                     "Bark.Thickness.25.4","Plant.height","Self.pruning","Flame_ht","Flame_duration")
+vars_of_interest = c("Scientific_Name","Code","CodeNum","California","Western","Gymno","Has_BA","Bark.Thickness.25.4","Plant.height","Self.pruning","Flame_duration","Flame_ht","Pct_consumed")
 d=dplyr::select(md,which(names(md)%in%vars_of_interest))
 
 #Choose species of interest
-#Here, California gymnosperm species that have basal area layers
-d=d[which(d$California==1 & d$Gymno==1 & d$Has_BA==1),]
+#Here, Western gymnosperm species that have basal area layers
+#Choosing Western instead of Californian adds 4 species ("Chamaecyparis_nootkatensis", "Juniperus_scopulorum", "Larix_occidentalis", "Picea_glauca")
+d=d[which(d$Western==1 & d$Gymno==1 & d$Has_BA==1),]
 
 #Clean up
 rm(flam,vars_of_interest)
@@ -42,17 +42,17 @@ rm(flam,vars_of_interest)
 ####2. Calculate fire-resistance score for species of interest (fast)####
 #Extract the quantile of each trait for each species 
 traits_of_interest <- 
-      c("Bark.Thickness.25.4","Plant.height","Self.pruning",
-        "Flame_ht","Flame_duration")
+      c("Bark.Thickness.25.4","Plant.height","Self.pruning","Flame_duration","Flame_ht","Pct_consumed")
 d$bt.quant=ecdf(d$Bark.Thickness.25.4)(d$Bark.Thickness.25.4)
 d$ph.quant=ecdf(d$Plant.height)(d$Plant.height)
 d$sp.quant=ecdf(d$Self.pruning)(d$Self.pruning)
+d$fd.quant=ecdf(-d$Flame_duration)(-d$Flame_duration) #Most resistant duration is shortest.
 d$fh.quant=ecdf(d$Flame_ht)(d$Flame_ht)
-d$fd.quant=ecdf(-d$Flame_duration)(-d$Flame_duration)
+d$pc.quant=ecdf(d$Pct_consumed)(d$Pct_consumed)
 
 #Apply (across each row) the weighted mean of the traits of interest, weighted by its completeness
 quants_of_interest = 
-      c("bt.quant","ph.quant","sp.quant","fh.quant","fd.quant")
+      c("bt.quant","ph.quant","sp.quant","fh.quant","fd.quant","pc.quant")
 wts <- #Weight each quantile variable by its completeness
       d[,quants_of_interest] %>% 
       apply(MARGIN=2,function(x) length(which(!is.na(x)))/length(x))
