@@ -40,6 +40,10 @@ d=d[which(d$Western==1 & d$Gymno==1 & d$Has_BA==1),]
 rm(flam,vars_of_interest)
 
 ####2. Calculate fire-resistance score for species of interest (fast)####
+#Deal with outliers
+#Don't trust the Tsuga bark thickness values from FVS FFE, too thick.
+d[grep("Tsuga",d$Scientific_Name),"Bark.Thickness.25.4"] <- NA
+
 #Extract the quantile of each trait for each species 
 traits_of_interest <- 
       c("Bark.Thickness.25.4","Plant.height","Self.pruning","Flame_duration","Flame_ht","Pct_consumed")
@@ -63,12 +67,16 @@ d$frs <-
 #write_csv(d[,c(1,8:ncol(d))],"./manuscript/tables/TableS1.csv")
 
 ####3. Look at trait correlations (fast)####
-d$log_Bark.thickness=log(d$Bark.Thickness.25.4)
-traits_of_interest <- 
+#hist(log10(d$Flame_duration))
+#hist(log10(d$Bark.Thickness.25.4))
+
+d$log_Bark.thickness=log10(d$Bark.Thickness.25.4)
+d$log_Flame_duration <- log10(d$Flame_duration)
+traits_of_interest_cors <- 
       c("log_Bark.thickness","Plant.height","Self.pruning",
-        "Flame_ht","Flame_duration")
-#chart.Correlation(d[,traits_of_interest])
-#chart.Correlation(d[,quants_of_interest])
+        "Flame_ht","log_Flame_duration","Pct_consumed")
+chart.Correlation(d[,traits_of_interest_cors])
+#chart.Correlation(d[,quants_of_interest_cors])
 dev.copy2pdf(file="./figures/MS1/FigS1_trait_correlations.pdf") 
 
 ####4. Import and process basal area data (slow)####
@@ -94,7 +102,7 @@ for(r in sppFileNames.study){ #Takes about 10 seconds per species.
       gc()
 }
 #Save this basal area product to work with it later. Takes 15 minutes, creates a ~700MB file in "large files"
-#writeRaster(stack(ba.rasters.study), "../large_files/ba.rasters.study.tif", bylayer=FALSE, format='GTiff')
+writeRaster(stack(ba.rasters.study), "../large_files/ba.rasters.study.tif", bylayer=FALSE, format='GTiff')
 #ba.rasters.study=stack("../large_files/ba.rasters.study.tif") #If reading from file already created
 
 #Import the basal area layers for other tree species in the area (not study species). Mostly includes hardwoods, plus conifers for which we have no trait data.
@@ -111,18 +119,18 @@ for(r in sppFileNames.other){ #Takes about 10 seconds per species.
       gc()
 }
 #Save this basal area product to work with it later. Takes 15 minutes, creates a ~700MB file in "large files". It's a stack, which means it can be treated like one when imported.
-#writeRaster(stack(ba.rasters.other), "../large_files/ba.rasters.other.tif", bylayer=FALSE, format='GTiff')
+writeRaster(stack(ba.rasters.other), "../large_files/ba.rasters.other.tif", bylayer=FALSE, format='GTiff')
 #ba.rasters.other=stack("../large_files/ba.rasters.other.tif") #If reading from file already created
 
 #Stack up the different rasters to get total basal area and filter out areas that are not conifer-dominated.
 
 #Create a raster stack of the study species.
-#ba.stack.study=stack(ba.rasters.study) # If running from scratch
-ba.stack.study=stack("../large_files/ba.rasters.study.tif") # If loading the basal area rasters from file
+ba.stack.study=stack(ba.rasters.study) # If running from scratch
+#ba.stack.study=stack("../large_files/ba.rasters.study.tif") # If loading the basal area rasters from file
 
 #Create a raster stack for basal area of all species
-#ba.stack.other=stack(ba.rasters.other) #If running from scratch
-ba.stack.other=stack("../large_files/ba.rasters.other.tif") # If loading the basal area rasters from file
+ba.stack.other=stack(ba.rasters.other) #If running from scratch
+#ba.stack.other=stack("../large_files/ba.rasters.other.tif") # If loading the basal area rasters from file
 
 Sys.time()
 ba.tot.study=overlay(ba.stack.study,fun=sum) #Create layer for cumulative basal area of study species. Takes ~40:00 
@@ -160,23 +168,24 @@ for(r in 1:length(sppFileNames.study)){ #For each species, calculate its fractio
 Sys.time()
 
 #Stack the individual basal area weights and fire resistance scores
-#ba.weights.stack=stack(ba.weights)
-#writeRaster(ba.weights.stack,"../large_files/ba.weights.stack.tif") #Takes 40 mins
-#ba.weights.stack <- stack("../large_files/ba.weights.stack.tif")
-#fr.stack=stack(fr.spp) 
-#writeRaster(fr.stack,"../large_files/fr.stack.tif") #Takes 15 mins. Resulting file is larger for some reason (1.6 GB vs 600 MB for ba.weights.stack)
-##fr.stack <- stack("../large_files/fr.stack.tif")
+ba.weights.stack=stack(ba.weights)
+writeRaster(ba.weights.stack,"../large_files/ba.weights.stack.tif") #Takes 40 mins
+#ba.weights.stack <- stack("../large_files/ba.weights.stack.tif") #If reading existing file
+fr.stack=stack(fr.spp) 
+writeRaster(fr.stack,"../large_files/fr.stack.tif") #Takes 15 mins. Resulting file is larger for some reason (1.6 GB vs 600 MB for ba.weights.stack)
+##fr.stack <- stack("../large_files/fr.stack.tif") #If reading existing file
 
 Sys.time()
 fr.weighted=raster::weighted.mean(x=fr.stack,w=ba.weights.stack,na.rm=T) #Key step. Calculate the CWM fire resistance score of each pixel. Takes ~1 hr 10 minutes
 Sys.time()
-#writeRaster(fr.weighted,"../large_files/fr.weighted.tif") #fairly fast
-#fr.weighted=raster("../large_files/fr.weighted.tif")
+writeRaster(fr.weighted,"../large_files/fr.weighted.tif") #fairly fast
+#fr.weighted=raster("../large_files/fr.weighted.tif") #If reading existing file
 
 plot(fr.weighted, main=c("Fire resistance index \nweighted by species abundance"),col=rev(colorRampPalette(brewer.pal(11,"Spectral"))(100)))
 plot(AOI,add=T)
 
-dev.copy2pdf(file="./figures/MS1/Fig1_frs_western.pdf") 
+#dev.copy2pdf(file="./figures/MS1/Fig1_frs_western.pdf") 
+#Start Here: Replace this line with better plotting code from Matt.
 
 ####5b. Read in layers that have already been created####
 #ba.weights.stack=stack("../large_files/ba.weights.stack.tif")
@@ -256,7 +265,36 @@ sd[which(sd$frs.intf<0.2),"mismatch"]="v.intf" #Vulnerable, intermediate-fire
 sd[which(sd$frs.intf>0.8),"mismatch"]="r.intf" #Resistant, intermediate-fire
 sd[which(sd$frs.inff>0.8),"mismatch"]="r.inff" #Resistant, infrequent-fire
 
-####8.Analyze and plot (fast)####
+
+####8. Mapping prep####
+##START HERE; need to define s
+usa <- getData("GADM", country="USA", level=1) %>%
+      spTransform(crs(s)) %>%
+      fortify() %>%
+      mutate(group=paste("usa", group))
+can <- getData("GADM", country="CAN", level=1) %>%
+      spTransform(crs(s)) %>%
+      fortify() %>%
+      mutate(group=paste("can", group))
+mex <- getData("GADM", country="MEX", level=1) %>%
+      spTransform(crs(s)) %>%
+      fortify() %>%
+      mutate(group=paste("mex", group))
+borders <- rbind(usa, can, mex)
+
+minimalism <- theme(axis.text=element_blank(), 
+                    axis.title=element_blank(), 
+                    axis.ticks=element_blank(),
+                    panel.grid=element_blank(),
+                    panel.background=element_blank(),
+                    legend.position="top")
+
+view <- coord_cartesian(xlim=range(d$x), 
+                        ylim=range(d$y))
+
+
+
+####9.Analyze and plot (fast)####
 sd.sub=sd[sample(nrow(sd), nrow(sd)*0.01), ]#Subsample 1% of the df (134k cells)
 sd.sub$frg[sd.sub$frg>5|sd.sub$frg==2|sd.sub$frg==4]=NA #Set certain FRG's to NA (e.g. rock, barren; FRG>5). Also remove the FRG 2's and 4's (grasslands and chaparral predominantly).
 table(sd.sub$fri,sd.sub$frg)  #Check that the FRI's mostly make sense with the FRG's (most of the 35 year and less FRI's are in FRG1, most of the 50 and 100 yr FRI's are with FRG 3, and most of the 200+ yr FRI's are with FRG5). Looks good.
