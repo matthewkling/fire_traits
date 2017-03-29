@@ -160,7 +160,7 @@ for(r in 1:length(sppFileNames.study)){ #For each species, calculate its fractio
       ba.weights[[r]][is.na(ba.weights[[r]])]=0 #Any cells where the species is absent, basal area weights should be 0 rather than NA. The NA's come from dividing by NA (in unforested areas) in the overlay() function above, but the weights where trees are absent should be 0. 
       #plot(ba.weighted[[r]],main=d$Code[r])
       fr.spp[[r]] <- 
-            calc(ba.weights.stack[[r]], fun=function(x){(x*0)+d$frs[r]}) #Modify the basal area layer to create a new overlaying raster containing the fire resistance score, which will be used to do the weighting later on. 
+            calc(ba.weights[[r]], fun=function(x){(x*0)+d$frs[r]}) #Modify the basal area layer to create a new overlaying raster containing the fire resistance score, which will be used to do the weighting later on. 
       print(r);print(length(sppFileNames.study))
       print(Sys.time())
       gc()
@@ -169,10 +169,10 @@ Sys.time()
 
 #Stack the individual basal area weights and fire resistance scores
 ba.weights.stack=stack(ba.weights)
-writeRaster(ba.weights.stack,"../large_files/ba.weights.stack.tif") #Takes 40 mins
+writeRaster(ba.weights.stack,"../large_files/ba.weights.stack.tif",overwrite=TRUE) #Takes 30 mins
 #ba.weights.stack <- stack("../large_files/ba.weights.stack.tif") #If reading existing file
 fr.stack=stack(fr.spp) 
-writeRaster(fr.stack,"../large_files/fr.stack.tif") #Takes 15 mins. Resulting file is larger for some reason (1.6 GB vs 600 MB for ba.weights.stack)
+writeRaster(fr.stack,"../large_files/fr.stack.tif") #Takes 10 mins. Resulting file is larger for some reason (1.6 GB vs 600 MB for ba.weights.stack)
 ##fr.stack <- stack("../large_files/fr.stack.tif") #If reading existing file
 
 Sys.time()
@@ -194,7 +194,7 @@ plot(AOI,add=T)
 #ba.tot.study=raster("../large_files/ba.tot.study.tif")
 #fr.weighted=raster("../large_files/fr.weighted.tif")
 
-####6. Process Fire Regime data (fast)####
+####6. Process LANDFIRE Fire Regime data (fast)####
 
 #Load and plot Fire Return Interval data
 western.fri= raster("./GIS/FRG_Rasters/Western_FRI_Clip_250m.tif") #Load Fire Return Intervals (FRI data). Fast. 250 m resolution (made this aggregation directly in ArcGIS to save time)
@@ -266,18 +266,55 @@ sd[which(sd$frs.intf>0.8),"mismatch"]="r.intf" #Resistant, intermediate-fire
 sd[which(sd$frs.inff>0.8),"mismatch"]="r.inff" #Resistant, infrequent-fire
 
 
-####8. Mapping prep####
-##START HERE; need to define s
+####7b. Matt's alternative set up data frame for analysis (is this really faster/better??)####
+##START HERE
+frs <- raster("../large_files/fr.weighted.tif")
+frg <- raster("./GIS/FRG_Rasters/Western_FRG_Clip_250m.tif")
+fri <- raster("./GIS/FRG_Rasters/Western_FRI_Clip_250m.tif")
+
+frs <- crop(frs, crop(fri, frs))
+frg <- crop(frg, frs)
+fri <- crop(fri, frs)
+#ba.rasters.other=stack("../large_files/ba.rasters.other.tif")
+ba.tot.other <- calc(ba.rasters.other, sum) #Takes 10 minutes
+ba.prop <- ba.tot.study / (ba.tot.study + ba.tot.other)
+
+#Reclassify fire regime data to suit our purposes
+rclmat.frg <- data.frame(from=c(-Inf,0.5,1.5,2.5,3.5,4.5,5.5),
+                         to=c(0.5,1.5,2.5,3.5,4.5,5.5,Inf),
+                         becomes=c(NA,1,NA,3,NA,5,NA)) #Only work with FRG 1,3,5
+frg <- reclassify(frg,as.matrix(rclmat.frg),right=T) 
+
+rclmat.fri <- data.frame(from=c(-Inf,0,2,4,6,8,11,17,20,22),
+                      to=c(0,2,4,6,8,11,17,20,22,150),
+                      becomes=c(NA,5,15,25,35,50,100,200,500,NA))
+fri <- reclassify(fri, as.matrix(rclmat.fri), right=T)
+
+
+# spatial sync -- shortcut assumes that raster misalignment is negligible!
+fri_tmp <- fri
+frg_tmp <- frg
+fri <- frs; values(fri) <- values(fri_tmp)
+frg <- frs; values(frg) <- values(frg_tmp)
+
+s <- stack(frs, fri, frg, ba.prop, ba.tot.other + ba.tot.study)
+s_d <- as.data.frame(rasterToPoints(s))
+names(s_d) <- c("x", "y", "frs", "fri", "frg", "ba_prop", "ba_tot")
+
+s_d <- filter(s_d, !is.na(frs), !is.na(fri))
+
+####8. New plots####
+
 usa <- getData("GADM", country="USA", level=1) %>%
-      spTransform(crs(s)) %>%
+      spTransform(crs(ba.tot.study)) %>%
       fortify() %>%
       mutate(group=paste("usa", group))
 can <- getData("GADM", country="CAN", level=1) %>%
-      spTransform(crs(s)) %>%
+      spTransform(crs(ba.tot.study)) %>%
       fortify() %>%
       mutate(group=paste("can", group))
 mex <- getData("GADM", country="MEX", level=1) %>%
-      spTransform(crs(s)) %>%
+      spTransform(crs(ba.tot.study)) %>%
       fortify() %>%
       mutate(group=paste("mex", group))
 borders <- rbind(usa, can, mex)
@@ -292,7 +329,52 @@ minimalism <- theme(axis.text=element_blank(),
 view <- coord_cartesian(xlim=range(d$x), 
                         ylim=range(d$y))
 
+p <- ggplot() + 
+      geom_polygon(data=borders, aes(long, lat, group=group),
+                   fill="gray95", color=NA) +
+      geom_raster(data=s_d,
+                  aes(x, y, fill=frs)) +
+      geom_path(data=borders, aes(long, lat, group=group),
+                size=.25) +
+      scale_fill_gradientn(
+            colors = rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(1:4,7:10)]) +
+      minimalism +
+      view +
+      guides(fill=guide_colourbar(barwidth=15)) +
+      labs(fill="score (0-1)",
+           title="Fire resistance index\nweighted by species abundance")
 
+ggsave("figures/MS1/Fig1.frs.png", p, width=7, height=9, units="in")
+
+# map of FRG
+p <- ggplot() + 
+      geom_polygon(data=borders, aes(long, lat, group=group),
+                   fill="gray95", color=NA) +
+      geom_raster(data=s_d,
+                  aes(x, y, fill=factor(frg))) +
+      geom_path(data=borders, aes(long, lat, group=group),
+                size=.25) +
+      scale_fill_manual(values=c("1"="darkgoldenrod2","3"="gray","5"="darkcyan")) +
+      minimalism +
+      view +
+      labs(fill="Fire regime group\n")
+ggsave("figures/MS1/FigS2.frg.png", p, width=7, height=9, units="in")
+
+# map of FRI
+p <- ggplot() + 
+      geom_polygon(data=borders, aes(long, lat, group=group),
+                   fill="gray95", color=NA) +
+      geom_raster(data=s_d,
+                  aes(x, y, fill=fri)) +
+      geom_path(data=borders, aes(long, lat, group=group),
+                size=.25) +
+      scale_fill_viridis(option="B", trans="log10", breaks=c(1,3,10,30,100,300,1000)) +
+      minimalism +
+      view +
+      guides(fill=guide_colourbar(barwidth=15)) +
+      labs(fill="years\n",
+           title="\nFire return interval")
+ggsave("figures/MS1/FigS3.fri.png", p, width=7, height=9, units="in")
 
 ####9.Analyze and plot (fast)####
 sd.sub=sd[sample(nrow(sd), nrow(sd)*0.01), ]#Subsample 1% of the df (134k cells)
