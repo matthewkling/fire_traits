@@ -77,7 +77,7 @@ traits_of_interest_cors <-
         "Flame_ht","log_Flame_duration","Pct_consumed")
 chart.Correlation(d[,traits_of_interest_cors])
 #chart.Correlation(d[,quants_of_interest_cors])
-dev.copy2pdf(file="./figures/MS1/FigS1_trait_correlations.pdf") 
+#dev.copy2pdf(file="./figures/MS1/FigS1_trait_correlations.pdf") 
 
 ####4. Import and process basal area data (slow)####
 #NOTE: This data is from the Forest Service (Wilson et al. 2013; http://www.fs.usda.gov/rds/archive/Product/RDS-2013-0013/). Units are sq ft/ac
