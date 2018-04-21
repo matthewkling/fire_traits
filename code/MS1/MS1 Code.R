@@ -1,23 +1,29 @@
 ##Code for manuscript on the biogeography of fire regimes.## 
 ##Jens Stevens; stevensjt@gmail.com##
-library(tidyverse)
-library(raster)
-library(rgdal)
-library(PerformanceAnalytics)
-library(RColorBrewer)
-library(viridis)
-library(broom)
+
+####0. Load Libraries####
+library(tidyverse) #for read_csv, etc. Version 1.2.1
+library(raster) #2.6.7
+library(rgdal) # for version 1.2-16
+#library(PerformanceAnalytics)
+#library(RColorBrewer)
+#library(viridis)
+#library(broom)
+
 ####1. Assemble trait data (fast)####
 
+###1.1 Process flammability data
 #Calculate mean flammability traits for PICO because working on the species-level
-flam=read_csv("./data/flam_traits.csv")
+flam <- #flammability data from Morgan Varner 
+      read_csv("./data/flam_traits.csv")
 flam[nrow(flam)+1,"Scientific_Name"] <- "Pinus_contorta"
-flam[nrow(flam),c(2,4,6,8)] = 
+flam[nrow(flam),c(2,4,6,8)] <-
       colMeans (flam[grep("contorta",flam$Scientific_Name),c(2,4,6,8)],na.rm=TRUE)
 flam[nrow(flam),c(3,5,7,9)] = "Derived from Banwell & Varner"
 
-#Merge component datasets
-md=Reduce(function(x, y) 
+###1.2 Merge component trait datasets
+md <- #md = master data for traits
+      Reduce(function(x, y) 
       merge(x, y, all=TRUE), 
       list(read_csv("./data/species_list.csv"), 
            read_csv("./data/ffe_traits.csv"), 
@@ -27,14 +33,18 @@ md=Reduce(function(x, y)
       ) 
 )
 
-#Choose variables of interest. "25.4" refers to dbh of tree in cm.
-vars_of_interest = c("Scientific_Name","Code","CodeNum","California","Western","Gymno","Has_BA","Bark.Thickness.25.4","Plant.height","Self.pruning","Flame_duration","Flame_ht","Pct_consumed")
-d=dplyr::select(md,which(names(md)%in%vars_of_interest))
+vars_of_interest <- #Identify variables of interest. "25.4" refers to dbh of tree in cm.
+      c("Scientific_Name","Code","CodeNum","California","Western","Gymno",
+        "Has_BA","Bark.Thickness.25.4","Plant.height","Self.pruning","Flame_duration",
+        "Flame_ht", "Pct_consumed")
 
-#Choose species of interest
-#Here, Western gymnosperm species that have basal area layers
-#Choosing Western instead of Californian adds 4 species ("Chamaecyparis_nootkatensis", "Juniperus_scopulorum", "Larix_occidentalis", "Picea_glauca")
-d=d[which(d$Western==1 & d$Gymno==1 & d$Has_BA==1),]
+d <- #d = working data for traits
+      md %>% #select variables of interest
+      dplyr::select(which(names(md)%in%vars_of_interest)) %>%
+      #Below, select study species, specifically western gymnosperms that have basal area data
+      #Choosing Western instead of Californian adds 4 species:
+      #("Chamaecyparis_nootkatensis", "Juniperus_scopulorum", "Larix_occidentalis", "Picea_glauca")
+      dplyr::filter(Western==1 & Gymno==1 & Has_BA==1)
 
 #Clean up
 rm(flam,vars_of_interest)
@@ -102,8 +112,7 @@ for(r in sppFileNames.study){ #Takes about 10 seconds per species.
       gc()
 }
 #Save this basal area product to work with it later. Takes 15 minutes, creates a ~700MB file in "large files"
-writeRaster(stack(ba.rasters.study), "../large_files/ba.rasters.study.tif", bylayer=FALSE, format='GTiff')
-#ba.rasters.study=stack("../large_files/ba.rasters.study.tif") #If reading from file already created
+#writeRaster(stack(ba.rasters.study), "../large_files/ba.rasters.study.tif", bylayer=FALSE, format='GTiff')
 
 #Import the basal area layers for other tree species in the area (not study species). Mostly includes hardwoods, plus conifers for which we have no trait data.
 sppCodeNums.other=md$CodeNum[which(md$Western==1 & md$Has_BA==1 & !is.na(md$CodeNum) & !md$Code%in%d$Code)] 
@@ -119,8 +128,7 @@ for(r in sppFileNames.other){ #Takes about 10 seconds per species.
       gc()
 }
 #Save this basal area product to work with it later. Takes 15 minutes, creates a ~700MB file in "large files". It's a stack, which means it can be treated like one when imported.
-writeRaster(stack(ba.rasters.other), "../large_files/ba.rasters.other.tif", bylayer=FALSE, format='GTiff')
-#ba.rasters.other=stack("../large_files/ba.rasters.other.tif") #If reading from file already created
+#writeRaster(stack(ba.rasters.other), "../large_files/ba.rasters.other.tif", bylayer=FALSE, format='GTiff')
 
 #Stack up the different rasters to get total basal area and filter out areas that are not conifer-dominated.
 
@@ -147,7 +155,7 @@ ba.tot.study[ba.tot.study/(ba.tot.study+ba.tot.other)<0.50]=NA #Remove pixels wh
 ba.tot.study[ba.tot.study<5]=NA #Filter out "sparse woodlands" by removing stands where total basal area is < 5 m2/ha
 
 #Save total basal area layer to save time in future.
-writeRaster(ba.tot.study,"../large_files/ba.tot.study.tif",overwrite=TRUE) #Large file, write to parent directory.
+#writeRaster(ba.tot.study,"../large_files/ba.tot.study.tif",overwrite=TRUE) #Large file, write to parent directory.
 #ba.tot.study <- raster("../large_files/ba.tot.study.tif") #If importing from file
 
 ####5. Do community-weighting of traits (slow)####
@@ -169,7 +177,7 @@ Sys.time()
 
 #Stack the individual basal area weights and fire resistance scores
 ba.weights.stack=stack(ba.weights)
-writeRaster(ba.weights.stack,"../large_files/ba.weights.stack.tif",overwrite=TRUE) #Takes 30 mins
+#writeRaster(ba.weights.stack,"../large_files/ba.weights.stack.tif",overwrite=TRUE) #Takes 30 mins
 #ba.weights.stack <- stack("../large_files/ba.weights.stack.tif") #If reading existing file
 fr.stack=stack(fr.spp) 
 writeRaster(fr.stack,"../large_files/fr.stack.tif") #Takes 10 mins. Resulting file is larger for some reason (1.6 GB vs 600 MB for ba.weights.stack)
