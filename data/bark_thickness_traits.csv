@@ -1,0 +1,30 @@
+Scientific_Name,Code,CodeNum,Western,California,Gymno,Bark.Thickness.25.4.FFE2009,Bark.Thickness.Index.FFE2009,Bark.Thickness.Multiplier.FFE2009,Bark.Thickness.25.4.FOFEM2017,Bark.Thickness.Index.FOFEM2017,Bark.Thickness.Multiplier.FOFEM.2017
+Abies_amabilis,Abi_Ama,11,1,1,1,1.1938,26,0.047,1.1938,26,0.047
+Abies_concolor,Abi_Con,15,1,1,1,1.2192,27,0.048,1.2192,27,0.048
+Abies_grandis,Abi_Gra,17,1,1,1,1.1684,25,0.046,1.1684,25,0.046
+Abies_lasiocarpa,Abi_Las,19,1,1,1,1.0414,20,0.041,1.0414,20,0.041
+Abies_magnifica,Abi_Mag,20,1,1,1,0.9906,18,0.039,0.9906,18,0.039
+Abies_procera,Abi_Pro,22,1,1,1,1.143,24,0.045,1.143,24,0.045
+Calocedrus_decurrens,Cal_Dec,81,1,1,1,1.7907,38,0.0705,1.524,34,0.06
+Chamaecyparis_lawsonia,Cha_Law,41,1,1,1,2.0574,39,0.081,2.0574,39,0.081
+Chamaecyparis_nootkatensis,Cha_Noo,42,1,0,1,0.5588,2,0.022,0.5588,2,0.022
+Juniperus_occidentalis,Jun_Occ,64,1,1,1,0.635,4,0.025,0.635,4,0.025
+Juniperus_scopulorum,Jun_Sco,66,1,0,1,0.635,4,0.025,0.8382,12,0.033
+Larix_occidentalis,Lar_Occ,73,1,0,1,1.6002,36,0.063,1.6002,36,0.063
+Picea_engelmannii,Pic_Eng,93,1,1,1,0.9144,15,0.036,0.9144,15,0.036
+Picea_glauca,Pic_Gla,94,1,0,1,0.635,4,0.025,0.635,4,0.025
+Picea_sitchensis,Pic_Sit,98,1,1,1,0.6858,6,0.027,0.6858,6,0.027
+Pinus_albicaulis,Pin_Alb,101,1,1,1,0.762,9,0.03,0.762,9,0.03
+Pinus_contorta,Pin_Con,108,1,1,1,0.7112,7,0.028,0.7112,7,0.028
+Pinus_edulis,Pin_Edu,106,1,1,1,1.5748,35 (error),0.062,0.8128,11,0.032
+Pinus_flexilis,Pin_Fle,113,1,1,1,0.762,9,0.03,0.762,9,0.03
+Pinus_jeffreyi,Pin_Jef,116,1,1,1,1.7272,37,0.068,1.7272,37,0.068
+Pinus_lambertiana,Pin_Lam,117,1,1,1,1.8288,38,0.072,1.8288,38,0.072
+Pinus_monticola,Pin_Mon3,119,1,1,1,0.889,14,0.035,0.889,14,0.035
+Pinus_ponderosa,Pin_Pon,122,1,1,1,1.6002,36,0.063,1.6002,36,0.063
+Pseudotsuga_menziesii,Pse_Men,202,1,1,1,1.6002,36,0.063,1.6002,36,0.063
+Sequoia_sempervirens,Seq_Sem,211,1,1,1,2.0574,39,0.081,2.0574,39,0.081
+Sequoiadendron_giganteum,Seq_Gig,212,1,1,1,2.0574,39,0.081,2.0574,39,0.081
+Thuja_plicata,Thu_Pli,242,1,1,1,0.889,14,0.035,0.889,14,0.035
+Tsuga_heterophylla,Tsu_Het,263,1,1,1,4.953,Unk (error),0.195,1.016,19,0.04
+Tsuga_mertensiana,Tsu_Mer,264,1,1,1,5.588,Unk (error),0.22,1.016,19,0.04

@@ -2,10 +2,10 @@
 ##Jens Stevens; stevensjt@gmail.com##
 
 ####0. Load Libraries####
-library(tidyverse) #for read_csv, etc. Version 1.2.1
-library(raster) #2.6.7
-library(rgdal) # for version 1.2-16
-#library(PerformanceAnalytics)
+library(tidyverse) #for read_csv() etc; version 1.2.1
+library(raster) #for raster(); 2.6.7
+library(rgdal) # for readOGR(); version 1.2-16
+library(PerformanceAnalytics) #for chart.Correlation(); version 1.5.2
 #library(RColorBrewer)
 #library(viridis)
 #library(broom)
@@ -26,7 +26,7 @@ md <- #md = master data for traits
       Reduce(function(x, y) 
       merge(x, y, all=TRUE), 
       list(read_csv("./data/species_list.csv"), 
-           read_csv("./data/ffe_traits.csv"), 
+           read_csv("./data/bark_thickness_traits.csv"), 
            read_csv("./data/try_traits.csv"),
            read_csv("./data/S&A_traits.csv"),
            flam
@@ -35,7 +35,7 @@ md <- #md = master data for traits
 
 vars_of_interest <- #Identify variables of interest. "25.4" refers to dbh of tree in cm.
       c("Scientific_Name","Code","CodeNum","California","Western","Gymno",
-        "Has_BA","Bark.Thickness.25.4","Plant.height","Self.pruning","Flame_duration",
+        "Has_BA","Bark.Thickness.25.4.FOFEM2017","Plant.height","Self.pruning","Flame_duration",
         "Flame_ht", "Pct_consumed")
 
 d <- #d = working data for traits
@@ -47,17 +47,16 @@ d <- #d = working data for traits
       dplyr::filter(Western==1 & Gymno==1 & Has_BA==1)
 
 #Clean up
-rm(flam,vars_of_interest)
-
+rm(flam,vars_of_interest, md)
 ####2. Calculate fire-resistance score for species of interest (fast)####
 #Deal with outliers
 #Don't trust the Tsuga bark thickness values from FVS FFE, too thick.
-d[grep("Tsuga",d$Scientific_Name),"Bark.Thickness.25.4"] <- NA
+#d[grep("Tsuga",d$Scientific_Name),"Bark.Thickness.25.4"] <- NA #Deprecated with new FOFEM data
 
 #Extract the quantile of each trait for each species 
 traits_of_interest <- 
-      c("Bark.Thickness.25.4","Plant.height","Self.pruning","Flame_duration","Flame_ht","Pct_consumed")
-d$bt.quant=ecdf(d$Bark.Thickness.25.4)(d$Bark.Thickness.25.4)
+      c("Bark.Thickness.25.4.FOFEM2017","Plant.height","Self.pruning","Flame_duration","Flame_ht","Pct_consumed")
+d$bt.quant=ecdf(d$Bark.Thickness.25.4.FOFEM2017)(d$Bark.Thickness.25.4.FOFEM2017)
 d$ph.quant=ecdf(d$Plant.height)(d$Plant.height)
 d$sp.quant=ecdf(d$Self.pruning)(d$Self.pruning)
 d$fd.quant=ecdf(-d$Flame_duration)(-d$Flame_duration) #Most resistant duration is shortest.
@@ -73,14 +72,14 @@ wts <- #Weight each quantile variable by its completeness
 d$frs <-
       d[,quants_of_interest] %>%
       apply(MARGIN=1, function(x) weighted.mean(x=x, w=wts, na.rm= TRUE) )
-
+#write_csv(d,"./data/processed/species_traits.csv")
 #write_csv(d[,c(1,8:ncol(d))],"./manuscript/tables/TableS1.csv")
 
 ####3. Look at trait correlations (fast)####
 #hist(log10(d$Flame_duration))
-#hist(log10(d$Bark.Thickness.25.4))
+#hist(log10(d$Bark.Thickness.25.4.FOFEM2017))
 
-d$log_Bark.thickness=log10(d$Bark.Thickness.25.4)
+d$log_Bark.thickness=log10(d$Bark.Thickness.25.4.FOFEM2017)
 d$log_Flame_duration <- log10(d$Flame_duration)
 traits_of_interest_cors <- 
       c("log_Bark.thickness","Plant.height","Self.pruning",
