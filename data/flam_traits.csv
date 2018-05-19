@@ -1,20 +1,21 @@
 Scientific_Name,Flame_duration,Flame_duration.Source,Flame_ht,Flame_ht.Source,Pct_consumed,Pct_consumed.Source,Smolder_duration,Smolder_duration.Source
-Abies_amabilis,79.8,Fonda et al. 1998 Northwest Sci,38.4,Fonda et al. 1998 Northwest Sci,32.0,Fonda et al. 1998 Northwest Sci,84.8,Fonda et al. 1998 Northwest Sci
+Abies_amabilis,79.8,Fonda et al. 1998 Northwest Sci,38.4,Fonda et al. 1998 Northwest Sci,32,Fonda et al. 1998 Northwest Sci,84.8,Fonda et al. 1998 Northwest Sci
 Abies_lasiocarpa,79.8,Fonda et al. 1998 Northwest Sci,16.7,Fonda et al. 1998 Northwest Sci,25.6,Fonda et al. 1998 Northwest Sci,91.8,Fonda et al. 1998 Northwest Sci
-Pinus_albicaulis,182.85714285714286,Banwell and Varner unpub data,48.42857142857143,Banwell and Varner unpub data,63.4,Banwell and Varner unpub data,498.14285714285717,Banwell and Varner unpub data
-Pinus_attenuata,92.8,Fonda 2001 Forest Science,67.2,Fonda 2001 Forest Science,90.4,Fonda 2001 Forest Science,331.0,Fonda 2001 Forest Science
-Pinus_coulteri,82.42857142857143,Banwell and Varner unpub data,67.71428571428571,Banwell and Varner unpub data,92.0,Banwell and Varner unpub data,328.57142857142856,Banwell and Varner unpub data
-Pinus_contorta_bolanderi,54.857142857142854,Banwell and Varner unpub data,59.57142857142857,Banwell and Varner unpub data,77.5,Banwell and Varner unpub data,584.0,Banwell and Varner unpub data
-Pinus_contorta_contorta,93.4,Banwell and Varner unpub data,48.0,Banwell and Varner unpub data,79.6,Banwell and Varner unpub data,497.2,Banwell and Varner unpub data
-Pinus_contorta_murrayana,155.28571428571428,Banwell and Varner unpub data,66.85714285714286,Banwell and Varner unpub data,82.5,Banwell and Varner unpub data,444.42857142857144,Banwell and Varner unpub data
-Pinus_edulis,253.85714285714286,Banwell and Varner unpub data,40.0,Banwell and Varner unpub data,62.2,Banwell and Varner unpub data,588.2857142857143,Banwell and Varner unpub data
-Pinus_flexilis,154.57142857142858,Banwell and Varner unpub data,55.285714285714285,Banwell and Varner unpub data,71.7,Banwell and Varner unpub data,769.4285714285714,Banwell and Varner unpub data
-Pinus_jeffreyi,79.2,Fonda 2001 Forest Science,67.3,Fonda 2001 Forest Science,90.0,Fonda 2001 Forest Science,306.6,Fonda 2001 Forest Science
+Picea_sitchensis,60.9,Kane unpublished,10,Kane unpublished,13.7,Kane unpublished,129,Kane unpublished
+Pinus_albicaulis,182.8571429,Banwell and Varner unpub data,48.42857143,Banwell and Varner unpub data,63.4,Banwell and Varner unpub data,498.1428571,Banwell and Varner unpub data
+Pinus_attenuata,92.8,Fonda 2001 Forest Science,67.2,Fonda 2001 Forest Science,90.4,Fonda 2001 Forest Science,331,Fonda 2001 Forest Science
+Pinus_coulteri,82.42857143,Banwell and Varner unpub data,67.71428571,Banwell and Varner unpub data,92,Banwell and Varner unpub data,328.5714286,Banwell and Varner unpub data
+Pinus_contorta_bolanderi,54.85714286,Banwell and Varner unpub data,59.57142857,Banwell and Varner unpub data,77.5,Banwell and Varner unpub data,584,Banwell and Varner unpub data
+Pinus_contorta_contorta,93.4,Banwell and Varner unpub data,48,Banwell and Varner unpub data,79.6,Banwell and Varner unpub data,497.2,Banwell and Varner unpub data
+Pinus_contorta_murrayana,155.2857143,Banwell and Varner unpub data,66.85714286,Banwell and Varner unpub data,82.5,Banwell and Varner unpub data,444.4285714,Banwell and Varner unpub data
+Pinus_edulis,253.8571429,Banwell and Varner unpub data,40,Banwell and Varner unpub data,62.2,Banwell and Varner unpub data,588.2857143,Banwell and Varner unpub data
+Pinus_flexilis,154.5714286,Banwell and Varner unpub data,55.28571429,Banwell and Varner unpub data,71.7,Banwell and Varner unpub data,769.4285714,Banwell and Varner unpub data
+Pinus_jeffreyi,79.2,Fonda 2001 Forest Science,67.3,Fonda 2001 Forest Science,90,Fonda 2001 Forest Science,306.6,Fonda 2001 Forest Science
 Pinus_lambertiana,128.5,Fonda et al. 1998 Northwest Sci,55.6,Fonda et al. 1998 Northwest Sci,77.1,Fonda et al. 1998 Northwest Sci,103.2,Fonda et al. 1998 Northwest Sci
 Pinus_monticola,90.29,Banwell and Varner unpub data,75.14,Banwell and Varner unpub data,82.78,Banwell and Varner unpub data,391.43,Banwell and Varner unpub data
-Pinus_ponderosa,79.7,Fonda 2001 Forest Science,77.0,Fonda 2001 Forest Science,92.0,Fonda 2001 Forest Science,136.9,Fonda 2001 Forest Science
+Pinus_ponderosa,79.7,Fonda 2001 Forest Science,77,Fonda 2001 Forest Science,92,Fonda 2001 Forest Science,136.9,Fonda 2001 Forest Science
 Pinus_radiata,63.5,Fonda 2001 Forest Science,67.3,Fonda 2001 Forest Science,81.4,Fonda 2001 Forest Science,360.1,Fonda 2001 Forest Science
-Pinus_sabiniana,75.71428571428571,Banwell and Varner unpub data,76.14285714285714,Banwell and Varner unpub data,88.8,Banwell and Varner unpub data,327.85714285714283,Banwell and Varner unpub data
+Pinus_sabiniana,75.71428571,Banwell and Varner unpub data,76.14285714,Banwell and Varner unpub data,88.8,Banwell and Varner unpub data,327.8571429,Banwell and Varner unpub data
 Pseudotsuga_menziesii,105.8,Fonda et al. 1998 Northwest Sci,26.2,Fonda et al. 1998 Northwest Sci,26.6,Fonda et al. 1998 Northwest Sci,21.8,Fonda et al. 1998 Northwest Sci
 Sequoiadendron_giganteum,148.5,Fonda et al. 1998 Northwest Sci,42.6,Fonda et al. 1998 Northwest Sci,75.8,Fonda et al. 1998 Northwest Sci,242.6,Fonda et al. 1998 Northwest Sci
 Sequoia_sempervirens,73.4,Fonda et al. 1998 Northwest Sci,59.4,Fonda et al. 1998 Northwest Sci,86.1,Fonda et al. 1998 Northwest Sci,317.3,Fonda et al. 1998 Northwest Sci
