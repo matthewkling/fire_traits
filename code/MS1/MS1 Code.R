@@ -367,7 +367,6 @@ sd[which(sd$frs.inff>0.8),"mismatch"]="r.inff" #Resistant, infrequent-fire
 
 
 ####7b. Matt's alternative set up data frame for analysis (is this really faster/better??)####
-##START HERE
 frs <- raster("../large_files/fr.weighted.tif")
 frg <- raster("./GIS/FRG_Rasters/Western_FRG_Clip_250m.tif")
 fri <- raster("./GIS/FRG_Rasters/Western_FRI_Clip_250m.tif")
