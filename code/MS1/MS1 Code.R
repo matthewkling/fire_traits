@@ -57,6 +57,7 @@ AOI <- readOGR(dsn="./GIS", layer="Western_States")
 AOI <- spTransform(AOI, CRS("+init=epsg:5070")) #Put on Nad83/Conus Albers (EPSG = 5070) scale
 
 
+
 ####2. Calculate fire-resistance score for species of interest (fast)####
 
 #Extract the quantile of each trait for each species 
@@ -97,6 +98,8 @@ write_csv(d,"./data/processed/species_traits_frs.csv")
 #species_traits_original: original 6 traits, quantiles, no picea sitchensis litter data.
 #species_traits_frs: original 6 traits with picea sitchensis, using percent of range rather than quantile. Using this one going forward. Also considered dropping flame duration because of the weak correlation, but keeping it in.
 #write_csv(d[,c("Scientific_Name", traits_of_interest, quants_of_interest,"frs")], "./manuscript/tables/TableS1.csv")
+
+
 
 ####3. Look at trait correlations (fast)####
 d$log_Bark.thickness=log10(d$Bark.Thickness.25.4.FOFEM2017)
@@ -159,125 +162,69 @@ demo_frs_ranking <-
             axis.text.x = element_blank())
 ggsave("figures/MS1/EDA/demo_frs_ranking.png", demo_frs_ranking, width=8, height=6, units="in")
 
+
+
 ####4. Import and process basal area data (slow; only need to do this once)####
 #NOTE: This data is from the Forest Service (Wilson et al. 2013; http://www.fs.usda.gov/rds/archive/Product/RDS-2013-0013/). Units are sq ft/ac
 
 ####4a.Import the basal area layers for the study species ####
 ##Study species are those filtered into "d" in section #1; must have traits and basal area data. The cropping process is slow. Takes ~5 minutes. Don't need to do this unless the study species have changed.
-sppFileNames.study=paste0("s",d$CodeNum,".img") 
-ba.rasters.study=list()
-for(r in sppFileNames.study){ #Takes about 10 seconds per species.
-      ba.rasters.study[[r]]=
-            raster(paste0("../large_files/LiveBasalAreaRasters/",r)) %>%
-            crop(extent(AOI))/4.356 #Convert sq ft/ac to sq m/ha
-      
-      #Note, the "../" directs one level up
-      #"large_files" must be in the parent directory
-      print(Sys.time())
-      gc()
-}
 #Save this basal area product to work with it later. Takes 15 minutes, creates a ~700MB file in "large files"
-#writeRaster(stack(ba.rasters.study), "../large_files/ba.rasters.study.tif", bylayer=FALSE, format='GTiff')
+sppFileNames.study=paste0("s",d$CodeNum,".img") 
+ba.stack.study <- sppFileNames.study %>%
+      paste0("../large_files/LiveBasalAreaRasters/", .) %>%
+      stack() %>%
+      crop(extent(AOI)) %>%
+      "/"(., 4.356) %>% # Convert sq ft/ac to sq m/ha
+      writeRaster("../large_files/ba.rasters.study.tif", bylayer=FALSE, 
+                  format='GTiff', overwrite=T)
 
 ####4b. Import the basal area layers for other tree species in the area ####
 ##"Other species" are trees that are not study species. Mostly includes hardwoods, plus conifers for which we have no trait data. Need this to calculate fraction of total basal area that is represented by study species. Don't need to do this unless the study species have changed.
+#Save this basal area product to work with it later. 
+#Takes 15 minutes, creates a ~700MB file in "large files".
 sppCodeNums.other=md$CodeNum[which(md$Western==1 & md$Has_BA==1 & !is.na(md$CodeNum) & !md$Code%in%d$Code)] 
 sppFileNames.other=paste0("s",sppCodeNums.other,".img")
-ba.rasters.other=list()
-for(r in sppFileNames.other){ #Takes about 10 seconds per species.
-      ba.rasters.other[[r]]=
-            raster(paste0("../large_files/LiveBasalAreaRasters/",r)) %>%
-            crop(extent(AOI))/4.356 #Convert sq ft/ac to sq m/ha
-      #Note, the "../" directs one level up
-      #"large_files" must be in the parent directory
-      print(Sys.time())
-      gc()
-}
-#Save this basal area product to work with it later. Takes 15 minutes, creates a ~700MB file in "large files". It's a stack, which means it can be treated like one when imported.
-#writeRaster(stack(ba.rasters.other), "../large_files/ba.rasters.other.tif", bylayer=FALSE, format='GTiff')
+ba.stack.other <- sppFileNames.other %>%
+      paste0("../large_files/LiveBasalAreaRasters/", .) %>%
+      stack() %>%
+      crop(extent(AOI)) %>%
+      "/"(., 4.356) %>% # Convert sq ft/ac to sq m/ha
+      writeRaster("../large_files/ba.rasters.other.tif", bylayer=FALSE, 
+                  format='GTiff', overwrite=T)
 
+#### 4c. Stack up the different rasters to get total basal area and filter out areas that are not conifer-dominated.####
+# Create raster stack for the study species, and for other species.
+ba.stack.study=stack("../large_files/ba.rasters.study.tif") # If loading the basal area rasters from file
+ba.stack.other=stack("../large_files/ba.rasters.other.tif") # If loading the basal area rasters from file
 
-####4c. Stack up the different rasters to get total basal area and filter out areas that are not conifer-dominated.####
-#Create a raster stack of the study species.
-#ba.stack.study=stack(ba.rasters.study) # If running from scratch
-#ba.stack.study=stack("../large_files/ba.rasters.study.tif") # If loading the basal area rasters from file
-
-#Create a raster stack for basal area of all species
-ba.stack.other=stack(ba.rasters.other) #If running from scratch
-#ba.stack.other=stack("../large_files/ba.rasters.other.tif") # If loading the basal area rasters from file
-
-Sys.time()
 #ba.tot.study=overlay(ba.stack.study,fun=sum) #Create layer for cumulative basal area of study species. Takes ~40:00 
-gc()
-Sys.time()
-#ba.tot.other=overlay(ba.stack.other,fun=sum) #Create layer for cumulative basal area of other species. Takes ~15:00
-gc()
-Sys.time()
+# Cumulative basal area of study species, and for other species.
+ba.tot.study <- sum(ba.stack.study)
+ba.tot.other <- sum(ba.stack.other)
 
 #Adjust values for total basal area (take some areas out of the study)
-#ba.tot.study[ba.tot.study>120]=NA #Remove outliers with large BA (just a few pixels from the redwood region)
-#ba.tot.study[ba.tot.study==0]=NA #If there is no basal area from any of the focal species, set basal area to NA.
-#ba.tot.study[ba.tot.study/(ba.tot.study+ba.tot.other)<0.50]=NA #Remove pixels where the combined basal area of all the study species (conifers) is less than 50% of the total tree basal area
-#ba.tot.study[ba.tot.study<5]=NA #Filter out "sparse woodlands" by removing stands where total basal area is < 5 m2/ha
+ba.tot.study[ba.tot.study>120]=NA #Remove outliers with large BA (just a few pixels from the redwood region)
+ba.tot.study[ba.tot.study==0]=NA #If there is no basal area from any of the focal species, set basal area to NA.
+ba.tot.study[ba.tot.study/(ba.tot.study+ba.tot.other)<0.50]=NA #Remove pixels where the combined basal area of all the study species (conifers) is less than 50% of the total tree basal area
+ba.tot.study[ba.tot.study<5]=NA #Filter out "sparse woodlands" by removing stands where total basal area is < 5 m2/ha
 
 #Save total basal area layer to save time in future.
-#writeRaster(ba.tot.study,"../large_files/ba.tot.study.tif",overwrite=TRUE) #Large file, write to parent directory.
+writeRaster(ba.tot.study,"../large_files/ba.tot.study.tif",overwrite=TRUE) #Large file, write to parent directory.
 
-####5. Do community-weighting of traits (slow)####
 
-####5a. Calculate the fraction of stand basal area comprised by each study species####
-#ba.rasters.study <- raster("../large_files/ba.rasters.study.tif") #If importing from file; BA of each study species
+
+#### 5. Do community-weighting of traits (slow)####
+
+# Weighted mean of fire resistence. 
+#ba.stack.study <- stack("../large_files/ba.rasters.study.tif") #If importing from file; BA of each study species
 #ba.tot.study <- raster("../large_files/ba.tot.study.tif") #If importing from file; total BA of study species
-sppFileNames.study <- paste0("s",d$CodeNum,".img") #Species ID'd by FIA code ("CodeNum") in raster directory.
-ba.weights <- list() #Create empty lists
-Sys.time()
-for(r in 1:length(sppFileNames.study)){ 
-      #For each species, calculate its fraction of stand basal area for each pixel (ba.weights), 
-      #and create a new raster (fr.spp) containing a uniform single value for its trait of interest. 
-      #Takes ~1 hour
-      ba.weights[[r]] <-#Calculate the fraction of stand basal area (study species) comprised by the given species
-            overlay(ba.rasters.study[[r]],ba.tot.study,fun=function(x,y){return(x/y)}) 
-      ba.weights[[r]][is.na(ba.weights[[r]])] <-
-            #Any cells where the species is absent, basal area weights should be 0 rather than NA. 
-            #The NA's come from dividing by NA (in unforested areas) in the overlay() function above, 
-            #but the weights where trees are absent should be 0.
-            0  
-      #plot(ba.weighted[[r]],main=d$Code[r])
-      print(r);print(length(sppFileNames.study))
-      print(Sys.time())
-      gc()
-}
-Sys.time()
+fr.weighted <- reclassify(ba.stack.study, c(NA, NA, 0), 
+                  filename="../large_files/ba.weights.stack.tif", overwrite=T) %>%
+      sum(d$frs * ., na.rm=T) %>% # this works because d$frs is vectorized over the raster layers
+      "/"(., ba.tot.study) %>%
+      writeRaster("../large_files/fr.weighted.tif", overwrite=T)
 
-#Stack the individual basal area weights and fire resistance scores
-ba.weights.stack=stack(ba.weights)
-#writeRaster(ba.weights.stack,"../large_files/ba.weights.stack.tif",overwrite=TRUE) #Takes 30 mins
-
-####5b. #Modify the basal area layer to create a new overlaying raster containing the fire resistance score####
-#ba.weights.stack <- stack("../large_files/ba.weights.stack.tif") #If reading existing file
-#ba.weights <- unstack(ba.weights.stack) #If reading existing file
-sppFileNames.study <- paste0("s",d$CodeNum,".img") #Species ID'd by FIA code ("CodeNum") in raster directory.
-fr.spp <- list() #Create empty lists
-for(r in 1:length(sppFileNames.study)){ #Takes ~20 minutes
-      fr.spp[[r]] <- 
-            #Modify the basal area layer to create a new overlaying raster containing the fire resistance score.
-            #Every pixel in the layer has the FRS for that particular species.
-            #This will be used to do the weighting later on. 
-            calc(ba.weights[[r]], fun=function(x){(x*0)+d$frs[r]}) 
-      print(r);print(length(sppFileNames.study))
-      print(Sys.time())
-      gc()
-}
-fr.stack=stack(fr.spp) 
-#writeRaster(fr.stack,"../large_files/fr.stack.tif") #Suggest not doing this; Resulting file is very for some reason (1.6 GB vs 600 MB for ba.weights.stack); maybe because the every pixel has a value and not an NA. Regardless, this can lead to crashes. It's better to just take the 20 minutes to run the for loop in section 5b and create fr.stack that way, then create fr.weighted below and save the fr.weighted raster that way.
-##fr.stack <- stack("../large_files/fr.stack.tif") #If reading existing file
-gc()
-Sys.time()
-fr.weighted=raster::weighted.mean(x=fr.stack,w=ba.weights.stack,na.rm=T) #Key step. Calculate the CWM fire resistance score of each pixel. Takes ~1 hr 20 minutes
-Sys.time()
-#writeRaster(fr.weighted,"../large_files/fr.weighted.tif") #fairly fast
-#fr.weighted=raster("../large_files/fr.weighted.tif") #If reading existing file
-gc()
 
 #Quick plot of fire regime scores to take a look; more formal plot creation is below in #7b.
 #plot(fr.weighted, main=c("Fire resistance index \nweighted by species abundance"),
@@ -292,6 +239,8 @@ gc()
 #ba.rasters.other=stack("../large_files/ba.rasters.other.tif")
 #ba.tot.study=raster("../large_files/ba.tot.study.tif")
 #fr.weighted=raster("../large_files/fr.weighted.tif")
+
+
 
 ####6. Process LANDFIRE Fire Regime data (fast; replaced by 7b?)####
 
@@ -406,6 +355,8 @@ names(s_d) <- c("x", "y", "frs", "fri", "frg", "ba_prop", "ba_tot")
 s_d <- filter(s_d, !is.na(frs), !is.na(fri))
 write_rds(s_d,"../large_files/s_d.RDS")#write data stack (fast)
 
+
+
 ####8. New maps from Matt####
 
 usa <- getData("GADM", country="USA", level=1) %>%
@@ -429,13 +380,15 @@ minimalism <- theme(axis.text=element_blank(),
                     panel.background=element_blank(),
                     legend.position="top")
 
-view <- coord_cartesian(xlim=range(d$x), 
-                        ylim=range(d$y))
+frsd <- fr.weighted %>% rasterToPoints %>% as.data.frame %>% rename(frs=layer)
+
+view <- coord_cartesian(xlim=range(frsd$x), 
+                        ylim=range(frsd$y))
 
 p <- ggplot() + 
       geom_polygon(data=borders, aes(long, lat, group=group),
                    fill="gray95", color=NA) +
-      geom_raster(data=s_d,
+      geom_raster(data=frsd,
                   aes(x, y, fill=frs)) +
       geom_path(data=borders, aes(long, lat, group=group),
                 size=.25) +
@@ -478,6 +431,8 @@ p <- ggplot() +
       labs(fill="years\n",
            title="\nFire return interval")
 ggsave("figures/MS1/FigS3.fri.png", p, width=7, height=9, units="in")
+
+
 
 ####9.Analyze and plot frs-fire regime relationships (fast)####
 sd.sub <- #Randomly subsample 1% of the df (134k [~119k?] cells)
