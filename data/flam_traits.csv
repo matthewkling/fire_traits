@@ -1,6 +1,18 @@
 Scientific_Name,Flame_duration,Flame_duration.Source,Flame_ht,Flame_ht.Source,Pct_consumed,Pct_consumed.Source,Smolder_duration,Smolder_duration.Source
 Abies_amabilis,79.8,Fonda et al. 1998 Northwest Sci,38.4,Fonda et al. 1998 Northwest Sci,32,Fonda et al. 1998 Northwest Sci,84.8,Fonda et al. 1998 Northwest Sci
+Abies_concolor,97.28571429,Kane unpublished,22.86,Kane unpublished,44.54,Kane unpublished,173.43,Kane unpublished
+Abies_grandis,88.85714286,Kane unpublished,15.14,Kane unpublished,14.17,Kane unpublished,53.14,Kane unpublished
 Abies_lasiocarpa,79.8,Fonda et al. 1998 Northwest Sci,16.7,Fonda et al. 1998 Northwest Sci,25.6,Fonda et al. 1998 Northwest Sci,91.8,Fonda et al. 1998 Northwest Sci
+Abies_magnifica,101.7142857,Kane unpublished,18.00,Kane unpublished,32.14,Kane unpublished,116.00,Kane unpublished
+Abies_procera,101.4285714,Kane unpublished,14.57,Kane unpublished,22.76,Kane unpublished,60.43,Kane unpublished
+Calocedrus_decurrens,105,Kane unpublished,25.29,Kane unpublished,46.64,Kane unpublished,187.14,Kane unpublished
+Chamaecyparis_lawsonia,115.5714286,Kane unpublished,21.71,Kane unpublished,31.37,Kane unpublished,91.57,Kane unpublished
+Chamaecyparis_nootkatensis,134.1428571,Kane unpublished,48.00,Kane unpublished,65.69,Kane unpublished,157.29,Kane unpublished
+Juniperus_occidentalis,107.7142857,Kane unpublished,25.71,Kane unpublished,47.88,Kane unpublished,168.00,Kane unpublished
+Juniperus_scopulorum,117.8571429,Kane unpublished,32.43,Kane unpublished,55.28,Kane unpublished,92.14,Kane unpublished
+Larix_occidentalis,89.85714286,Kane unpublished,27.86,Kane unpublished,34.59,Kane unpublished,48.00,Kane unpublished
+Picea_engelmanii,122.8571429,Kane unpublished,17.14,Kane unpublished,28.68,Kane unpublished,27.57,Kane unpublished
+Picea_glauca,102.2857143,Kane unpublished,16.00,Kane unpublished,29.14,Kane unpublished,43.14,Kane unpublished
 Picea_sitchensis,60.9,Kane unpublished,10,Kane unpublished,13.7,Kane unpublished,129,Kane unpublished
 Pinus_albicaulis,182.8571429,Banwell and Varner unpub data,48.42857143,Banwell and Varner unpub data,63.4,Banwell and Varner unpub data,498.1428571,Banwell and Varner unpub data
 Pinus_attenuata,92.8,Fonda 2001 Forest Science,67.2,Fonda 2001 Forest Science,90.4,Fonda 2001 Forest Science,331,Fonda 2001 Forest Science
@@ -21,3 +33,4 @@ Sequoiadendron_giganteum,148.5,Fonda et al. 1998 Northwest Sci,42.6,Fonda et al.
 Sequoia_sempervirens,73.4,Fonda et al. 1998 Northwest Sci,59.4,Fonda et al. 1998 Northwest Sci,86.1,Fonda et al. 1998 Northwest Sci,317.3,Fonda et al. 1998 Northwest Sci
 Thuja_plicata,113.2,Fonda et al. 1998 Northwest Sci,42.4,Fonda et al. 1998 Northwest Sci,45.7,Fonda et al. 1998 Northwest Sci,130.7,Fonda et al. 1998 Northwest Sci
 Tsuga_heterophylla,68.4,Fonda et al. 1998 Northwest Sci,24.6,Fonda et al. 1998 Northwest Sci,18.8,Fonda et al. 1998 Northwest Sci,43.6,Fonda et al. 1998 Northwest Sci
+Tsuga_mertensiana,118,Kane unpublished,15.43,Kane unpublished,27.95,Kane unpublished,119.43,Kane unpublished
