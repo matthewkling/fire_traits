@@ -12,16 +12,16 @@ library(broom) #for tidy(); version 0.4.3
 
 ####1. Assemble trait data (fast)####
 
-###1.1 Process flammability data
+####1.1 Process flammability data###
 #Calculate mean flammability traits for PICO because working on the species-level
-flam <- #flammability data from Morgan Varner 
+flam <- #flammability data
       read_csv("./data/flam_traits.csv")
 flam[nrow(flam)+1,"Scientific_Name"] <- "Pinus_contorta"
 flam[nrow(flam),c(2,4,6,8)] <-
       colMeans (flam[grep("contorta",flam$Scientific_Name),c(2,4,6,8)],na.rm=TRUE)
 flam[nrow(flam),c(3,5,7,9)] = "Derived from Banwell & Varner"
 
-###1.2 Merge component trait datasets
+####1.2 Merge component trait datasets###
 md <- #md = master data for traits
       Reduce(function(x, y) 
       merge(x, y, all=TRUE), 
@@ -35,135 +35,116 @@ md <- #md = master data for traits
 
 vars_of_interest <- #Identify variables of interest. "25.4" refers to dbh of tree in cm.
       c("Scientific_Name","Code","CodeNum","California","Western","Gymno",
-        "Has_BA","Bark.Thickness.25.4.FOFEM2017","Plant.height","Self.pruning","Flame_duration",
-        "Flame_ht", "Pct_consumed")
+        "Has_BA","Bark.Thickness.25.4.FOFEM2017","Plant.height",
+        "Self.pruning",
+        "Flame_ht", "Pct_consumed", "Flame_duration")
 
-d <- #d = working data for traits
+d <- #working data for traits
       md %>% #select variables of interest
       dplyr::select(which(names(md)%in%vars_of_interest)) %>%
       #Below, select study species, specifically western gymnosperms that have basal area data
-      #Choosing Western instead of Californian adds 4 species:
-      #("Chamaecyparis_nootkatensis", "Juniperus_scopulorum", "Larix_occidentalis", "Picea_glauca")
       dplyr::filter(Western==1 & Gymno==1 & Has_BA==1)
 
-#Clean up
-rm(flam,vars_of_interest, md)
+#tidy up working data frame
+d <- d[,c(1,2,8,9,10,12,13,11)]
+names(d) <- c("Scientific_Name", "Code", "bt", "ph", "sp", "fh", "pc", "fd")
 
-##Read in geospatial data
+rm(flam,vars_of_interest, md) #Clean up working environment
+
+##Read in geospatial data #Deprecated
 #Set the area of interest (AOI). Options include:
 #"CA_Boundary"
 #"Western_States"
-AOI <- readOGR(dsn="./GIS", layer="Western_States")
-AOI <- spTransform(AOI, CRS("+init=epsg:5070")) #Put on Nad83/Conus Albers (EPSG = 5070) scale
-
-
+#AOI <- readOGR(dsn="./GIS", layer="Western_States")
+#AOI <- spTransform(AOI, CRS("+init=epsg:5070")) #Put on Nad83/Conus Albers (EPSG = 5070) scale
 
 ####2. Calculate fire-resistance score for species of interest (fast)####
 
-#Extract the quantile of each trait for each species 
-traits_of_interest <- 
-      c("Bark.Thickness.25.4.FOFEM2017","Plant.height","Self.pruning","Flame_duration","Flame_ht","Pct_consumed")
-d$bt.quant=ecdf(d$Bark.Thickness.25.4.FOFEM2017)(d$Bark.Thickness.25.4.FOFEM2017)
-d$ph.quant=ecdf(d$Plant.height)(d$Plant.height)
-d$sp.quant=ecdf(d$Self.pruning)(d$Self.pruning)
-d$fd.quant=ecdf(-d$Flame_duration)(-d$Flame_duration) #Most resistant duration is shortest.
-d$fh.quant=ecdf(d$Flame_ht)(d$Flame_ht)
-d$pc.quant=ecdf(d$Pct_consumed)(d$Pct_consumed)
-#Percentile of each trait for each species
-d$bt.pct <- (d$Bark.Thickness.25.4.FOFEM2017-min(d$Bark.Thickness.25.4.FOFEM2017)) / 
-      diff(range(d$Bark.Thickness.25.4.FOFEM2017))
-d$ph.pct <- (d$Plant.height-min(d$Plant.height)) / 
-      diff(range(d$Plant.height))
-d$sp.pct <- (d$Self.pruning-min(d$Self.pruning)) / 
-      diff(range(d$Self.pruning))
-d$fd.pct <- 1-(d$Flame_duration-min(d$Flame_duration, na.rm = T)) / 
-      diff(range(d$Flame_duration, na.rm = T)) #Need "1-x" because most resistant duration is shortest.
-d$fh.pct <- (d$Flame_ht-min(d$Flame_ht, na.rm = T)) / 
-      diff(range(d$Flame_ht, na.rm = T))
-d$pc.pct <- (d$Pct_consumed-min(d$Pct_consumed, na.rm = T)) / 
-      diff(range(d$Pct_consumed, na.rm = T))
-
-#Apply (across each row) the weighted mean of the traits of interest, weighted by its completeness
-#quants_of_interest = if running for quantiles, the original way.
-#      c("bt.quant","ph.quant","sp.quant","fh.quant","fd.quant","pc.quant")
-quants_of_interest = #if running for percent of range instead of quantile
-      c("bt.pct","ph.pct","sp.pct","fh.pct","fd.pct","pc.pct")
-wts <- #Weight each quantile variable by its completeness
-      d[,quants_of_interest] %>% 
-      apply(MARGIN=2,function(x) length(which(!is.na(x)))/length(x))
-d$frs <-
-      d[,quants_of_interest] %>%
-      apply(MARGIN=1, function(x) weighted.mean(x=x, w=wts, na.rm= TRUE) )
-write_csv(d,"./data/processed/species_traits_frs.csv")
-#species_traits_original: original 6 traits, quantiles, no picea sitchensis litter data.
-#species_traits_frs: original 6 traits with picea sitchensis, using percent of range rather than quantile. Using this one going forward. Also considered dropping flame duration because of the weak correlation, but keeping it in.
-#write_csv(d[,c("Scientific_Name", traits_of_interest, quants_of_interest,"frs")], "./manuscript/tables/TableS1.csv")
-
-
-
-####3. Look at trait correlations (fast)####
-d$log_Bark.thickness=log10(d$Bark.Thickness.25.4.FOFEM2017)
-d$log_Flame_duration <- log10(d$Flame_duration)
-traits_of_interest_cors <- 
-      c("log_Bark.thickness","Plant.height","Self.pruning",
-        "Flame_ht","log_Flame_duration","Pct_consumed")
-chart.Correlation(d[,traits_of_interest_cors])
-#chart.Correlation(d[,quants_of_interest_cors])
+####2.1 Examine trait correlations###
+d$log_bt=log10(d$bt)
+d$log_fd <- log10(d$fd)
+d_cors <- d[,c("log_bt","ph","sp","fh","pc","log_fd")]
+names(d_cors) <- 
+      c("log\n(bark thickness)","plant height","self pruning",
+        "flame height","percent\nconsumed", "log\n(flame duration)")
+chart.Correlation(d_cors)
 #dev.copy2pdf(file="./figures/MS1/FigS1_trait_correlations.pdf") 
+rm(d_cors) #Clean up working environment
+d <- d[,-pmatch(c("log_bt","log_fd"),names(d))]
 
-demo_ranking <-
-      ggplot(d) +
-      geom_text(aes(x = rep(0.5, times = nrow(d)), 
-                    y = bt.pct, label = round(Bark.Thickness.25.4.FOFEM2017,2) ),
-                size = 3) +
-      geom_label(aes(x = rep(0.8, times = nrow(d)), 
-                    y = bt.pct, label = Code ),
-                size = 3, hjust = 0, fill = "white") +
-      geom_text(aes(x = rep(2.5, times = nrow(d)), 
-                    y = sp.pct, label = Self.pruning ),
-                size = 3) +
-      geom_label(aes(x = rep(2.8, times = nrow(d)), 
-                     y = sp.pct, label = Code ),
-                 size = 3, hjust = 0, fill = "white") +
-      geom_text(aes(x = rep(4.5, times = nrow(d)), 
-                    y = pc.pct, label = round(Pct_consumed,1) ),
-                size = 3) +
-      geom_label(aes(x = rep(4.8, times = nrow(d)), 
-                     y = pc.pct, label = Code ),
-                 size = 3, hjust = 0, fill = "white") +
-      annotate("text", x = 0.5, y = 1.1, label = "Bark thickness \n(cm)", hjust = 0)+
-      annotate("text", x = 2.5, y = 1.1, label = "Self pruning", hjust = 0)+
-      annotate("text", x = 4.5, y = 1.1, label = "% litter \nconsumed", hjust = 0)+
-      xlim(0, 10) + ylim (0, 1.1)+
-      labs(x = "", y = "percentile of range", size = 18)+
-      theme_bw()+
-      scale_y_continuous(breaks = c(0, 0.25, 0.5, 0.75, 1))+
-      theme(axis.text.y = element_text(size = 16), axis.title.y = element_text(size = 16),
-            axis.text.x = element_blank())
-ggsave("figures/MS1/EDA/demo_ranking.png", demo_ranking, width=7, height=7, units="in")
+####2.2 Flammability ordination###
+#Since flame height and percent consumed are tightly correlated, calculate the first principal component of their ordination and use that.
+ord <- prcomp(d[,c("Flame_ht","Pct_consumed")])
+PC1 <- ord$x[,"PC1"]
+#summary(ord) #PC1 explains 96.7% of the variance of this trait
 
-demo_frs_ranking <-
-      ggplot(d[order(d$frs, decreasing = T),]) +
-      geom_text(aes(x = rep(0.3, times = nrow(d)), 
-                    y = frs, label = round(frs,2) ),
+####2.3 Calculate the "percentile of range" each trait for each species###
+#Had formerly calculated quantile (e.g. ecdf(d$Flame_ht)(d$Flame_ht)),
+#But this overly-separated species for traits where actual values were tightly clustered.
+
+d$bt.pct <- (d$bt-min(d$bt)) / diff(range(d$bt))
+d$ph.pct <- (d$ph-min(d$ph)) / diff(range(d$ph))
+d$sp.pct <- (d$sp-min(d$sp)) / diff(range(d$sp))
+#d$fh.pct <- (d$fh-min(d$fh)) / diff(range(d$fh))
+#d$pc.pct <- (d$pc -min(d$pc)) / diff(range(d$pc))
+d$fh_pc.pct <- #Need "1-x" because most negative PC scores are tallest flame lengths,
+      #with largest percent consumed. **Using this one**
+      1- (PC1-min(PC1)) / diff(range(PC1))
+d$fd.pct <- #Need "1-x" because most resistant duration is shortest.
+      1- (d$fd-min(d$fd)) / diff(range(d$fd)) 
+
+#Apply (across each row) the mean of the traits of interest, to calculate FRS 
+#(formerly weighted by trait completeness, but now have full dataset).
+percentiles_of_interest <- 
+      c("bt.pct","ph.pct","sp.pct","fh_pc.pct", "fd.pct")
+d$frs <-
+      rowMeans(d[,percentiles_of_interest]) 
+
+write_csv(d,"./data/processed/species_traits_frs.csv")
+#species_traits_frs: using this one going forward. Considered dropping flame duration because of the weak correlation, but keeping it in because it adds additional information.
+
+d_t1 <- d[-2]
+d_t1[,c(2,8:13)] <- round(d_t1[,c(2,8:13)],2)
+d_t1[,c(3,5:7)] <- round(d_t1[,c(3,5:7)],1)
+d_t1$Scientific_Name <- gsub("_", " ",d_t1$Scientific_Name)
+d_t1 <- d_t1[order(d_t1$frs, decreasing = TRUE),]
+#write_csv(d_t1, "./manuscript/tables/Table1.csv")
+
+####3. Plot species rankings####
+d_frs_ranking <- d[order(d$frs, decreasing = T),]
+d_frs_ranking$group <- c(rep("archetypal frequent-fire conifers",5),
+                         rep("frequent-fire associated species",3),
+                         rep("mesic/shade-tolerant species",11),
+                         rep("subalpine/arid species", 10))
+d_frs_ranking$frs_vis <- round(d_frs_ranking$frs,2)
+d_frs_ranking$frs_vis[c(5,6,10,11,13,14,15,16,17,18,21,23,24,25,28)] <- ""
+frs_ranking <-
+      ggplot(d_frs_ranking) +
+      geom_text(aes(x = rep(0, times = nrow(d)), 
+                    y = frs, label = frs_vis ),
                 size = 3) +
-      geom_label(aes(x = c(seq(from = 0.58, by = 0.5, length.out = 5),
-                           seq(from = 0.58, by = 0.5, length.out = 3),
-                           seq(from = 0.58, by = 0.5, length.out = 10),
-                           seq(from = 0.58, by = 0.5, length.out = 11) ),
-                     y = frs, label = Code ),
-                 size = 3, hjust = 0, fill = "white") +
-      annotate("text", x = 0.3, y = 0.9, label = "fire resistance score (frs)", hjust = 0, size = 8)+
+      geom_label(aes(x = c(seq(from = 0.14, by = 0.5, length.out = 5),
+                           seq(from = 0.14, by = 0.5, length.out = 3),
+                           seq(from = 0.14, by = 0.5, length.out = 11),
+                           seq(from = 0.14, by = 0.5, length.out = 10) ),
+                     y = frs, label = Code, fill = group),
+                 size = 3, hjust = 0) +
+      annotate("text", x = 0.3, y = 0.9, 
+               label = "fire resistance score (frs)", hjust = 0, size = 8)+
       xlim(0, 6) + ylim (0, 1)+
       labs(x = "", y = "frs", size = 18)+
       theme_bw()+
       scale_y_continuous(breaks = c(0, 0.25, 0.5, 0.75, 1))+
-      theme(axis.text.y = element_text(size = 14), axis.title.y = element_text(size = 14),
-            axis.text.x = element_blank())
-ggsave("figures/MS1/EDA/demo_frs_ranking.png", demo_frs_ranking, width=8, height=6, units="in")
+      scale_fill_manual(values = c("indianred3", "gold2", "cyan3", "mediumorchid3")) +
+      theme(#axis.text.y = element_text(size = 14), 
+            axis.text.y = element_blank(),
+            axis.title.y = element_text(size = 14),
+            axis.text.x = element_blank(), legend.position = c(0.8,0.8))
+ggsave("figures/MS1/Fig2_frs_ranking.png", 
+       frs_ranking, width=8, height=4, units="in")
 
 
-
+#START HERE
 ####4. Import and process basal area data (slow; only need to do this once)####
 #NOTE: This data is from the Forest Service (Wilson et al. 2013; http://www.fs.usda.gov/rds/archive/Product/RDS-2013-0013/). Units are sq ft/ac
 
