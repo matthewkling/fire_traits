@@ -134,7 +134,6 @@ p_frs_ranking <-
 rm(d_frs_ranking,p_frs_ranking)
 
 
-#START HERE
 ####4. Import and process basal area data (slow; only need to do this once)####
 #NOTE: This data is from the Forest Service (Wilson et al. 2013; http://www.fs.usda.gov/rds/archive/Product/RDS-2013-0013/). Units are sq ft/ac
 
@@ -190,7 +189,7 @@ writeRaster(ba.tot.study,"../large_files/ba.tot.study.tif",overwrite=TRUE) #Larg
 
 
 
-#### 5. Do community-weighting of traits (slow)####
+####5. Do community-weighting of traits (slow)####
 
 # Weighted mean of fire resistence. 
 #ba.rasters.study <- stack("../large_files/ba.rasters.study.tif") #If importing from file; BA of each study species
@@ -274,7 +273,7 @@ extract(ba.rasters.other,c(c))
 getValues(frs)[c(c)]
 
 
-####8. Fire resistance score map figure####
+####7. Fire resistance score map figure####
 
 usa <- getData("GADM", country="USA", level=1) %>%
       spTransform(crs(ba.tot.study)) %>%
@@ -319,7 +318,7 @@ p <- ggplot() +
 
 ggsave("figures/MS1/Fig3.frs.png", p, width=7, height=9, units="in") # (slow, giving errors)
 
-####8b Supplementary figures####
+####8. Supplementary map figures####
 ###FRG map figure
 p_frg <- ggplot() + 
       geom_polygon(data=borders, aes(long, lat, group=group),
@@ -352,7 +351,7 @@ p_fri <- ggplot() +
 
 
 
-####9.Analyze and plot frs-fire regime relationships (fast)####
+####9.Analyze and plot frs-fire regime relationships and "mismatches" (fast)####
 sd.sub <- #Randomly subsample 1% of the df (134k [~119k?] cells)
       s_d[sample(nrow(s_d), nrow(s_d)*0.01), ]
 sd.sub$frg[sd.sub$frg>5|sd.sub$frg==2|sd.sub$frg==4]=NA 
