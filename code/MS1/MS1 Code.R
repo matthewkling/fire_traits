@@ -65,6 +65,7 @@ chart.Correlation(d_cors)
 #dev.copy2pdf(file="./figures/MS1/FigS1_trait_correlations.pdf") 
 rm(d_cors) #Clean up working environment
 d <- d[,-pmatch(c("log_bt","log_fd"),names(d))] #Remove log-transformed variables
+d <- d[,-pmatch(c("log_bt"),names(d))] #Remove log-transformed variables
 
 ####2.2 Flammability ordination###
 #Since flame height and percent consumed are tightly correlated, calculate the first principal component of their ordination and use that.
@@ -85,6 +86,9 @@ d$fh_pc.pct <- #Need "1-x" because most negative PC scores are tallest flame len
       1- (PC1-min(PC1)) / diff(range(PC1))
 d$fd.pct <- #Need "1-x" because most resistant duration is shortest.
       1- (d$fd-min(d$fd)) / diff(range(d$fd)) 
+d$fd.pct <- #Need "1-x" because most resistant duration is shortest. *apply to log values
+      1- (d$log_fd-min(d$log_fd)) / diff(range(d$log_fd)) 
+
 
 #Apply (across each row) the mean of the traits of interest, to calculate FRS 
 #(formerly weighted by trait completeness, but now have full dataset):
@@ -118,19 +122,21 @@ p_frs_ranking <-
                            seq(from = 0.1, by = 0.5, length.out = 10) ),
                      y = frs, label = Code, fill = group),
                  size = 3, hjust = 0) +
+      geom_tile(aes(x=rep(2,29),y=rep(2,29),fill = group)) + #Dummy data to override legend
       #annotate("text", x = 0.3, y = 0.9, 
       #         label = "fire resistance score (frs)", hjust = 0, size = 8)+
-      xlim(0, 6) + ylim (0, 1)+
-      labs(x = "", y = "frs", size = 18)+
-      theme_bw()+
-      scale_y_continuous(breaks = seq(0.1,0.85,0.05))+
-      scale_fill_manual(values = c("indianred3", "gold2", "cyan3", "mediumorchid3")) +
+      xlim(0, 6) + 
+      labs(x = "", y = "frs", size = 18) +
+      theme_bw() +
+      scale_y_continuous(limits = c(0.14,0.85), breaks = seq(0.1,0.85,0.05)) +
+      scale_fill_manual(
+            values =rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(9,7,4,2)] ) +
       theme(axis.text.y = element_text(size = 10), 
             #axis.text.y = element_blank(),
             axis.title.y = element_text(size = 14),
             axis.text.x = element_blank(), legend.position = c(0.8,0.8))
-#ggsave("figures/MS1/Fig2_p_frs_ranking.png", 
-#       frs_ranking, width=8, height=4, units="in")
+ggsave("figures/MS1/Fig2_p_frs_ranking.png", 
+       p_frs_ranking, width=8, height=4, units="in")
 rm(d_frs_ranking,p_frs_ranking)
 
 
