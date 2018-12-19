@@ -55,8 +55,8 @@ rm(flam,vars_of_interest) #Clean up working environment
 ####2. Calculate fire-resistance score for species of interest (fast)####
 
 ####2.1 Examine trait correlations###
-d$log_bt=log10(d$bt)
-d$log_fd <- log10(d$fd)
+d$log_bt <- log10(d$bt) #Log transform to normalize
+d$log_fd <- log10(d$fd) #Log transform to reduce PIED outlier
 d_cors <- d[,c("log_bt","ph","sp","fh","pc","log_fd")]
 names(d_cors) <- 
       c("log\n(bark thickness)","plant height","self pruning",
@@ -64,8 +64,8 @@ names(d_cors) <-
 chart.Correlation(d_cors)
 #dev.copy2pdf(file="./figures/MS1/FigS1_trait_correlations.pdf") 
 rm(d_cors) #Clean up working environment
-d <- d[,-pmatch(c("log_bt","log_fd"),names(d))] #Remove log-transformed variables
-d <- d[,-pmatch(c("log_bt"),names(d))] #Remove log-transformed variables
+#d <- d[,-pmatch(c("log_bt","log_fd"),names(d))] #Remove log-transformed variables
+d <- d[,-pmatch(c("log_bt"),names(d))] #Remove log-transformed bark thickness
 
 ####2.2 Flammability ordination###
 #Since flame height and percent consumed are tightly correlated, calculate the first principal component of their ordination and use that.
@@ -81,26 +81,26 @@ d$ph.pct <- (d$ph-min(d$ph)) / diff(range(d$ph))
 d$sp.pct <- (d$sp-min(d$sp)) / diff(range(d$sp))
 #d$fh.pct <- (d$fh-min(d$fh)) / diff(range(d$fh))
 #d$pc.pct <- (d$pc -min(d$pc)) / diff(range(d$pc))
-d$fh_pc.pct <- #Need "1-x" because most negative PC scores are tallest flame lengths,
-      #with largest percent consumed. **Using this one**
+d$fh_pc.pct <- #Need "1-x" because most negative princomp scores are tallest flame lengths,
+      #with largest percent consumed.
       1- (PC1-min(PC1)) / diff(range(PC1))
-d$fd.pct <- #Need "1-x" because most resistant duration is shortest.
-      1- (d$fd-min(d$fd)) / diff(range(d$fd)) 
-d$fd.pct <- #Need "1-x" because most resistant duration is shortest. *apply to log values
+#d$fd.pct <- #Need "1-x" because most resistant duration is shortest.
+#      1- (d$fd-min(d$fd)) / diff(range(d$fd)) 
+d$fd.pct <- #Need "1-x" because most resistant duration is shortest. 
+      #apply to log values to reduce PIED outlier
       1- (d$log_fd-min(d$log_fd)) / diff(range(d$log_fd)) 
-
 
 #Apply (across each row) the mean of the traits of interest, to calculate FRS 
 #(formerly weighted by trait completeness, but now have full dataset):
 d$frs <-
       rowMeans(d[,c("bt.pct","ph.pct","sp.pct","fh_pc.pct", "fd.pct")]) 
 
-d_t1 <- d[-2]
+d_t1 <- d[-c(2,9)] #Set up data frame for Table 1 (remove Code and log_fd).
 d_t1[,c(2,8:13)] <- round(d_t1[,c(2,8:13)],2)
 d_t1[,c(3,5:7)] <- round(d_t1[,c(3,5:7)],1)
 d_t1$Scientific_Name <- gsub("_", " ",d_t1$Scientific_Name)
 d_t1 <- d_t1[order(d_t1$frs, decreasing = TRUE),]
-#write_csv(d_t1, "./manuscript/tables/Table1.csv")
+write_csv(d_t1, "./manuscript/tables/Table1.csv")
 rm(ord,PC1,d_t1) #Clean up working environment
 
 ####3. Plot species rankings####
@@ -135,7 +135,7 @@ p_frs_ranking <-
             #axis.text.y = element_blank(),
             axis.title.y = element_text(size = 14),
             axis.text.x = element_blank(), legend.position = c(0.8,0.8))
-ggsave("figures/MS1/Fig2_p_frs_ranking.png", 
+ggsave("figures/MS1/FigS2_p_frs_ranking.png", 
        p_frs_ranking, width=8, height=4, units="in")
 rm(d_frs_ranking,p_frs_ranking)
 
@@ -322,7 +322,7 @@ p <- ggplot() +
       labs(fill="score (0-1)",
            title="Fire resistance index\nweighted by species abundance")
 
-ggsave("figures/MS1/Fig3.frs.png", p, width=7, height=9, units="in") # (slow, giving errors)
+ggsave("figures/MS1/Fig2.frs.png", p, width=7, height=9, units="in") # (slow, giving errors)
 
 ####8. Supplementary map figures####
 ###FRG map figure
