@@ -304,8 +304,8 @@ minimalism <- theme(axis.text=element_blank(),
 
 frsd <- frs %>% rasterToPoints %>% as.data.frame %>% rename(frs=fr.weighted)
 
-view <- coord_cartesian(xlim=range(frsd$x), 
-                        ylim=range(frsd$y))
+view <- coord_cartesian(xlim=range(s_d$x), 
+                        ylim=range(s_d$y))
 
 p <- ggplot() + 
       geom_polygon(data=borders, aes(long, lat, group=group),
@@ -420,19 +420,22 @@ p_mismatches <-
       ggplot() + 
       geom_polygon(data=borders, aes(long, lat, group=group),
                    fill="gray95", color=NA) +
-      geom_raster(data=s_d[which(!is.na(s_d$mismatch)),],
+      geom_raster(data=s_d,#[which(!is.na(s_d$mismatch)),],
                   aes(x, y, fill=mismatch)) +
       geom_path(data=borders, aes(long, lat, group=group),
                 size=.25) +
-      #scale_fill_viridis(option="B", trans="log10", breaks=c(1,3,10,30,100,300,1000)) +
       scale_fill_manual(labels = c("resistant-infrequent", "resistant-intermediate",
                                    "sensitive-frequent", "sensitive-intermediate"), 
-                        values = c("#76AB99","#a6d96a","#d7191c","#fdae61")) +
+                        values = c("#76AB99","#a6d96a","#d7191c","#fdae61"),
+                        breaks = c("r.inff", "r.intf",
+                                   "s.ff", "s.intf"),
+                        na.value="gray85") +
       minimalism +
       view +
-      #guides(fill=guide_colourbar(barwidth=15)) +
-      labs(fill="category \n(FRS-FRI) \n",
-           title="\nMismatches between FRS and FRI")
+      theme(legend.direction="vertical") +
+      labs(fill="\ncategory (FRS-FRI)                                                                                                                 ",
+           title="\n      Mismatches between FRS and FRI")
+ggsave("figures/MS1/FigS6.mismatches.png", p_mismatches, width=7, height=9, units="in")
 
 #Plot frs~fri (fire return interval with coloring for inset figure)
 sd.sub <- #Randomly subsample 1% of the df (134k [~119k?] cells)
@@ -441,29 +444,37 @@ sd.sub$frg[sd.sub$frg>5|sd.sub$frg==2|sd.sub$frg==4]=NA
 #Set certain FRG's to NA (e.g. rock, barren; FRG>5). Also remove the FRG 2's and 4's (grasslands and chaparral predominantly).
 p_fri_frs_inset <-
       ggplot(sd.sub)+
-      geom_boxplot(aes(x=fri,y=frs,group=fri),notch=F)+ 
-      geom_rect(aes(xmin = 1, xmax = 20, 
-                    ymin = range(s_d[which(s_d$mismatch=="s.ff"),"frs"])[1],
+      geom_rect(aes(xmin = 4, xmax = 20, 
+                    ymin = .1,
                     ymax = range(s_d[which(s_d$mismatch=="s.ff"),"frs"])[2] ),
-                color = "#d7191c", fill = NA) +
-      geom_rect(aes(xmin = 41, xmax = 150, 
-                    ymin = range(s_d[which(s_d$mismatch=="s.intf"),"frs"])[1],
+                color = "#d7191c", fill = "#d7191c") +
+      geom_rect(aes(xmin = 41, xmax = 145, 
+                    ymin = .1,
                     ymax = range(s_d[which(s_d$mismatch=="s.intf"),"frs"])[2] ),
-                color = "#fdae61", fill = NA) +
+                color = "#fdae61", fill = "#fdae61") +
       geom_rect(aes(xmin = 41, xmax = 145, 
                     ymin = range(s_d[which(s_d$mismatch=="r.intf"),"frs"])[1],
-                    ymax = range(s_d[which(s_d$mismatch=="r.intf"),"frs"])[2] ),
-                color = "#a6d96a", fill = NA) +
+                    ymax = .9),
+                color = "#a6d96a", fill = "#a6d96a") +
       geom_rect(aes(xmin = 155, xmax = 300, 
                     ymin = range(s_d[which(s_d$mismatch=="r.inff"),"frs"])[1],
-                    ymax = range(s_d[which(s_d$mismatch=="r.inff"),"frs"])[2] ),
-                color = "#76AB99", fill = NA) +
-      scale_x_log10(breaks=c(5,15,25,35,50,100,200,500))+
+                    ymax = .9),
+                color = "#76AB99", fill = "#76AB99") +
+      geom_boxplot(aes(x=fri,y=frs,group=fri),notch=F, fill="black", alpha=.15)+ 
+      scale_x_log10(breaks=c(5,15,50,100,200,500))+
       annotation_logticks(sides="b")+
       labs(y="FRS",x="Median fire return interval")+
       theme_bw()+
-      theme(axis.text=element_text(size=12,color='black'),axis.title=element_text(size=14))
+      theme(axis.text=element_text(size=12,color='black'),
+            axis.title=element_text(size=14),
+            plot.background=element_rect(fill=NA, color=NA))
 ggsave("figures/MS1/FigS6.mismatches_inset.png", p_fri_frs_inset, width=5, height=4.5, units="in")
 
-###Matt, can you figure out how to make the above figure inset into the below figure?
-ggsave("figures/MS1/FigS6.mismatches.png", p_mismatches, width=7, height=9, units="in")
+### the above figure inset into the map figure
+png("figures/MS1/FigS6.mismatches_combo.png", width=7, height=10, units="in", res=500)
+plot(p_mismatches)
+print(p_fri_frs_inset, 
+      vp=viewport(x = 0.45, y = 0.7, 
+                  width = unit(0.525, "npc"), height = unit(0.3, "npc"),
+                  just = c("left", "bottom")))
+dev.off()
