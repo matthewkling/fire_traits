@@ -393,6 +393,7 @@ p_frg_frs <-
 #dev.copy2pdf(file="./figures/MS1/Fig3_Fire.resistance~FRG.pdf")
 #FRG.m=aov(frs~factor(frg),data=sd.sub)
 #TukeyHSD(FRG.m)
+#FRI.m2=lm(frs~frg,data=sd.sub)
 p_S4 <- grid.arrange(p_frg_frs,p_fri_frs,ncol=1)
 ggsave("figures/MS1/FigS4.png", p_S4, width=5, height=7, units="in")
 
