@@ -100,7 +100,7 @@ d_t1[,c(2,8:13)] <- round(d_t1[,c(2,8:13)],2)
 d_t1[,c(3,5:7)] <- round(d_t1[,c(3,5:7)],1)
 d_t1$Scientific_Name <- gsub("_", " ",d_t1$Scientific_Name)
 d_t1 <- d_t1[order(d_t1$frs, decreasing = TRUE),]
-write_csv(d_t1, "./manuscript/tables/Table1.csv")
+#write_csv(d_t1, "./manuscript/tables/Table1.csv")
 rm(ord,PC1,d_t1) #Clean up working environment
 
 ####3. Plot species rankings####
@@ -111,6 +111,8 @@ d_frs_ranking$group <- c(rep("archetypal frequent-fire conifers",5),
                          rep("subalpine/arid species", 10))
 d_frs_ranking$frs_vis <- round(d_frs_ranking$frs,2)
 d_frs_ranking$frs_vis[c(5,6,10,11,13,14,15,16,17,18,21,23,24,25,28)] <- ""
+d_frs_ranking$Code <- #Formatting species codes per reviewer request
+      str_trunc(str_to_title(tolower(d_frs_ranking$Code)),7,ellipsis = "")
 p_frs_ranking <-
       ggplot(d_frs_ranking) +
       #geom_text(aes(x = rep(0, times = nrow(d)), 
@@ -126,7 +128,7 @@ p_frs_ranking <-
       #annotate("text", x = 0.3, y = 0.9, 
       #         label = "fire resistance score (frs)", hjust = 0, size = 8)+
       xlim(0, 6) + 
-      labs(x = "", y = "frs", size = 18) +
+      labs(x = "", y = "FRS", size = 18) +
       theme_bw() +
       scale_y_continuous(limits = c(0.14,0.85), breaks = seq(0.1,0.85,0.05)) +
       scale_fill_manual(
@@ -135,7 +137,7 @@ p_frs_ranking <-
             #axis.text.y = element_blank(),
             axis.title.y = element_text(size = 14),
             axis.text.x = element_blank(), legend.position = c(0.8,0.8))
-ggsave("figures/MS1/FigS2_p_frs_ranking.png", 
+ggsave("figures/MS1/Fig2_p_frs_ranking.png", 
        p_frs_ranking, width=8, height=4, units="in")
 rm(d_frs_ranking,p_frs_ranking)
 
