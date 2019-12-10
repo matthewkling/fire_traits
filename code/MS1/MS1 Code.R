@@ -45,6 +45,7 @@ d <- #working data for traits
       dplyr::select(which(names(md)%in%vars_of_interest)) %>%
       #Below, select study species, specifically western gymnosperms that have basal area data
       dplyr::filter(Western==1 & Gymno==1 & Has_BA==1)
+CodeNum <- d$CodeNum
 
 #tidy up working data frame
 d <- d[,c(1,2,8,9,10,12,13,11)]
@@ -148,11 +149,12 @@ rm(d_frs_ranking,p_frs_ranking)
 ####4a.Import the basal area layers for the study species ###
 ##Study species are those filtered into "d" in section #1; must have traits and basal area data. The cropping process is slow. Takes ~5 minutes. Don't need to do this unless the study species have changed.
 #Save this basal area product to work with it later. Takes 15 minutes, creates a ~700MB file in "large files"
-sppFileNames.study=paste0("s",d$CodeNum,".img") 
+AOI <- extent(-2356217, -504717, 991792, 3172542)
+sppFileNames.study=paste0("s",CodeNum,".img") 
 ba.rasters.study <- sppFileNames.study %>%
       paste0("../large_files/LiveBasalAreaRasters/", .) %>%
       stack() %>%
-      crop(extent(AOI)) %>%
+      crop(AOI) %>%
       "/"(., 4.356)  # Convert sq ft/ac to sq m/ha
 
 names(ba.rasters.study) <- d$Code      
@@ -169,11 +171,11 @@ sppFileNames.other=paste0("s",sppCodeNums.other,".img")
 ba.rasters.other <- sppFileNames.other %>%
       paste0("../large_files/LiveBasalAreaRasters/", .) %>%
       stack() %>%
-      crop(extent(AOI)) %>%
+      crop(AOI) %>%
       "/"(., 4.356)# Convert sq ft/ac to sq m/ha
 
 names(ba.rasters.other) <- sppCodes.other
-writeRaster("../large_files/ba.rasters.other.tif", bylayer=FALSE, 
+writeRaster(ba.rasters.other, "../large_files/ba.rasters.other.tif", bylayer=FALSE, 
                   format='GTiff', overwrite=T)
 
 #### 4c. Stack up the different rasters to get total basal area and filter out areas that are not conifer-dominated.###
@@ -321,10 +323,9 @@ p <- ggplot() +
       minimalism +
       view +
       guides(fill=guide_colourbar(barwidth=15)) +
-      labs(fill="score (0-1)",
-           title="Fire resistance index\nweighted by species abundance")
+      labs(fill="Fire resistance score (FRS)  ")
+ggsave("figures/MS1/Fig3.frs.png", p, width=7, height=8.5, units="in") # (slow)
 
-ggsave("figures/MS1/Fig2.frs.png", p, width=7, height=9, units="in") # (slow, giving errors)
 
 ####8. Supplementary map figures####
 ###FRG map figure
