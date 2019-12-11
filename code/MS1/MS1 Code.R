@@ -140,6 +140,60 @@ p_frs_ranking <-
             axis.text.x = element_blank(), legend.position = c(0.8,0.8))
 ggsave("figures/MS1/Fig2_p_frs_ranking.png", 
        p_frs_ranking, width=8, height=4, units="in")
+
+
+### alternate version of figure 2 ###
+
+dfr <- d_frs_ranking %>%
+  mutate(frs_rank = rank(frs),
+         group = paste0(toupper(substr(group, 1, 1)),
+                        substr(group, 2, nchar(group))),
+         group = sub("conifers", "\nconifers", group),
+         group = sub("species", "\nspecies", group)) %>%
+  group_by(group) %>%
+  mutate(group_id = max(frs_rank)) %>%
+  ungroup() %>%
+  mutate(group_id = as.integer(factor(group_id)),
+         frs_rank = frs_rank + group_id)
+
+groups <- dfr %>%
+  group_by(group) %>%
+  summarize(min = min(frs_rank),
+            max = max(frs_rank),
+            frs_rank = max(frs_rank))
+
+pal <- rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(9,7,4,2)]
+
+pal <- c("darkred", "darkorange2", "forestgreen", "dodgerblue")
+
+ggplot() +
+  geom_rect(data=groups, 
+            aes(xmin=0.125, xmax=1, ymin=min-.85, ymax=max+.85, 
+                fill=group), alpha=.15) +
+  geom_point(data=dfr,
+             aes(frs, frs_rank, color=group)) +
+  geom_text(data=dfr,
+            aes(frs, frs_rank, color=group, 
+                label=sub("_", " ", Scientific_Name)),
+            hjust=0, nudge_x=.01, fontface="italic", size=3) +
+  geom_text(data=groups, aes(x=.125, y=frs_rank, 
+                             label=group, color=group), 
+            hjust=0, vjust=1, nudge_x=.01, nudge_y=.3, 
+            lineheight=.8, size=4) +
+  scale_color_manual(values=pal) +
+  scale_fill_manual(values=pal) +
+  scale_y_continuous(expand=c(0,0)) +
+  scale_x_continuous(expand=c(0,0), limits=c(NA, 1),
+                     breaks=seq(0, .9, .1)) +
+  theme_minimal() +
+  theme(legend.position="none",
+        axis.text.y=element_blank(),
+        panel.grid.major.y=element_blank(),
+        panel.grid.minor.y=element_blank()) +
+  labs(x="Fire resistance score (FRS)", y=NULL)
+ggsave("figures/MS1/Fig2_v2.png", width=8, height=4.5, units="in")
+
+
 rm(d_frs_ranking,p_frs_ranking)
 
 
