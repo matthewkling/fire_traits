@@ -193,6 +193,7 @@ p <- ggplot() +
         panel.grid.minor.y=element_blank()) +
   labs(x="Fire resistance score (FRS)", y=NULL)
 ggsave("figures/MS1/Fig2_v2.png", p, width=8, height=5, units="in")
+ggsave("figures/MS1/Fig2_v2.pdf", p, width=8, height=5, units="in")
 
 
 rm(d_frs_ranking,p_frs_ranking)
