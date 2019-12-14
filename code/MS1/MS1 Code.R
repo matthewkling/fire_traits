@@ -164,34 +164,35 @@ groups <- dfr %>%
 
 pal <- rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(9,7,4,2)]
 
-pal <- c("darkred", "darkorange2", "forestgreen", "dodgerblue")
-
-ggplot() +
+pal <- c("darkred", "darkorange2", "forestgreen", "darkblue")
+xmax <- 1.035
+p <- ggplot() +
   geom_rect(data=groups, 
-            aes(xmin=0.125, xmax=1, ymin=min-.85, ymax=max+.85, 
+            aes(xmin=0.125, xmax=xmax, ymin=min-.85, ymax=max+.85, 
                 fill=group), alpha=.15) +
   geom_point(data=dfr,
              aes(frs, frs_rank, color=group)) +
   geom_text(data=dfr,
             aes(frs, frs_rank, color=group, 
                 label=sub("_", " ", Scientific_Name)),
-            hjust=0, nudge_x=.01, fontface="italic", size=3) +
+            hjust=0, nudge_x=.01, fontface="italic", size=4) +
   geom_text(data=groups, aes(x=.125, y=frs_rank, 
                              label=group, color=group), 
             hjust=0, vjust=1, nudge_x=.01, nudge_y=.3, 
-            lineheight=.8, size=4) +
+            lineheight=.8, size=5) +
   scale_color_manual(values=pal) +
   scale_fill_manual(values=pal) +
   scale_y_continuous(expand=c(0,0)) +
-  scale_x_continuous(expand=c(0,0), limits=c(NA, 1),
-                     breaks=seq(0, .9, .1)) +
+  scale_x_continuous(expand=c(0,0), limits=c(NA, xmax),
+                     breaks=seq(0, 1, .1)) +
   theme_minimal() +
   theme(legend.position="none",
+        axis.text.x=element_text(size=10),
         axis.text.y=element_blank(),
         panel.grid.major.y=element_blank(),
         panel.grid.minor.y=element_blank()) +
   labs(x="Fire resistance score (FRS)", y=NULL)
-ggsave("figures/MS1/Fig2_v2.png", width=8, height=4.5, units="in")
+ggsave("figures/MS1/Fig2_v2.png", p, width=8, height=5, units="in")
 
 
 rm(d_frs_ranking,p_frs_ranking)
