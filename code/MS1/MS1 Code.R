@@ -162,11 +162,7 @@ groups <- dfr %>%
             max = max(frs_rank),
             frs_rank = max(frs_rank))
 
-pal <- rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(9,7,4,2)]
-
-pal <- c("darkred", "darkorange2", "forestgreen", "darkblue")
-pal <- c("#d7191c", "#fdae61", "#abd9e9", "#2c7bb6")
-pal <- c("#a50026", "#d9b24c", "#98cbd9", "#313695")
+#pal <- rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(9,7,4,2)]
 pal <- c("#a50026", "darkorange2", "dodgerblue", "#313695")
 xmax <- 1.035
 p <- ggplot() +
@@ -374,125 +370,19 @@ view <- coord_cartesian(xlim=range(s_d$x),
 
 p <- ggplot() + 
   geom_polygon(data=borders, aes(long, lat, group=group),
-               fill="gray95", color=NA) +
+               fill="gray75", color=NA) +
   geom_raster(data=frsd,
               aes(x, y, fill=frs)) +
   geom_path(data=borders, aes(long, lat, group=group),
             size=.25) +
-  scale_fill_gradientn(
-    colors = rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(1:4,7:10)]) +
-  minimalism +
-  view +
-  guides(fill=guide_colourbar(barwidth=15)) +
-  labs(fill="Fire resistance score (FRS)  ")
-ggsave("figures/MS1/Fig3.frs.png", p, width=7, height=8.5, units="in") # (slow)
-
-
-i <- 75
-p <- ggplot() + 
-  geom_polygon(data=borders, aes(long, lat, group=group),
-               fill=paste0("gray", i), color=NA) +
-  geom_raster(data=frsd,
-              aes(x, y, fill=frs)) +
-  geom_path(data=borders, aes(long, lat, group=group),
-            size=.25) +
+  # This is the RdYlBu palette from colorbrewer
   scale_fill_gradientn(colors = rev(c("#a50026", "#d73027", "#f46d43", "#fdae61", "#fee090", "#ffffbf", 
                                       "#e0f3f8", "#abd9e9", "#74add1", "#4575b4", "#313695"))) +
   minimalism +
   view +
   guides(fill=guide_colourbar(barwidth=15)) +
   labs(fill="Fire resistance score (FRS)  ")
-ggsave(paste0("figures/MS1/Fig3.frs_RdYlBu", i, ".png"), 
-       p, width=7, height=8.5, units="in") # (slow)
-
-
-
-for(pal in LETTERS[2:3]){
-  p <- ggplot() + 
-    geom_polygon(data=borders, aes(long, lat, group=group),
-                 fill="gray80", color=NA) +
-    geom_raster(data=frsd,
-                aes(x, y, fill=frs)) +
-    geom_path(data=borders, aes(long, lat, group=group),
-              size=.25) +
-    scale_fill_viridis_c(option=pal) +
-    minimalism +
-    view +
-    guides(fill=guide_colourbar(barwidth=15)) +
-    labs(fill="Fire resistance score (FRS)  ")
-  ggsave(paste0("figures/MS1/Fig3.frs_viridis", pal, ".png"), 
-         p, width=7, height=8.5, units="in") # (slow)
-}
-
-for(i in seq(0, 100, 10)){
-  p <- ggplot() + 
-    geom_polygon(data=borders, aes(long, lat, group=group),
-                 fill=paste0("gray", i), color=NA) +
-    geom_raster(data=frsd,
-                aes(x, y, fill=frs)) +
-    geom_path(data=borders, aes(long, lat, group=group),
-              size=.25) +
-    scale_fill_gradientn(colors = rev(c("#a50026", "#d73027", "#f46d43", "#fdae61", "#fee090", "#ffffbf", 
-                                        "#e0f3f8", "#abd9e9", "#74add1", "#4575b4", "#313695"))) +
-    minimalism +
-    view +
-    guides(fill=guide_colourbar(barwidth=15)) +
-    labs(fill="Fire resistance score (FRS)  ")
-  ggsave(paste0("figures/MS1/Fig3.frs_RdYlBu", i, ".png"), 
-         p, width=7, height=8.5, units="in") # (slow)
-}
-
-
-i <- 95
-p <- ggplot() + 
-  geom_polygon(data=borders, aes(long, lat, group=group),
-               fill=paste0("gray", i), color=NA) +
-  geom_raster(data=frsd,
-              aes(x, y, fill=frs)) +
-  geom_path(data=borders, aes(long, lat, group=group),
-            size=.25) +
-  scale_fill_gradientn(colors = rev(c("#a50026", "#f46d43", 
-                                      "#fee090",
-                                      "#e0f3f8", 
-                                      "#74add1", "#313695"))) +
-  minimalism +
-  view +
-  guides(fill=guide_colourbar(barwidth=15)) +
-  labs(fill="Fire resistance score (FRS)  ")
-ggsave(paste0("figures/MS1/Fig3.frs_RdYlBu_v1.png"), 
-       p, width=7, height=8.5, units="in") # (slow)
-p <- ggplot() + 
-  geom_polygon(data=borders, aes(long, lat, group=group),
-               fill=paste0("gray", i), color=NA) +
-  geom_raster(data=frsd,
-              aes(x, y, fill=frs)) +
-  geom_path(data=borders, aes(long, lat, group=group),
-            size=.25) +
-  scale_fill_gradientn(colors = c("darkblue", "#1eb8ff", "darkgoldenrod2", "darkred")) +
-  minimalism +
-  view +
-  guides(fill=guide_colourbar(barwidth=15)) +
-  labs(fill="Fire resistance score (FRS)  ")
-ggsave(paste0("figures/MS1/Fig3.frs_RdYlBu_v2.png"), 
-       p, width=7, height=8.5, units="in") # (slow)
-
-
-
-p <- ggplot() + 
-  geom_polygon(data=borders, aes(long, lat, group=group),
-               fill="gray95", color=NA) +
-  geom_raster(data=frsd,
-              aes(x, y, fill=frs)) +
-  geom_path(data=borders, aes(long, lat, group=group),
-            size=.25) +
-  scale_fill_gradientn(colors=rev(c("#ffdb4d", "red", "blue", "#3bc1ff"))) +
-  minimalism +
-  view +
-  guides(fill=guide_colourbar(barwidth=15)) +
-  labs(fill="Fire resistance score (FRS)  ")
-ggsave("figures/MS1/Fig3.frs_GdRdBu.png", p, width=7, height=8.5, units="in") # (slow)
-
-
+ggsave("figures/MS1/Fig3.frs.png", p, width=7, height=8.5, units="in") # (slow)
 
 
 ####8. Supplementary map figures####
