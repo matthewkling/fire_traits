@@ -16,35 +16,35 @@ library(gridExtra) #for grid.arrange(); version 2.3
 ####1.1 Process flammability data###
 #Calculate mean flammability traits for PICO because working on the species-level
 flam <- #flammability data
-      read_csv("./data/flam_traits.csv")
+  read_csv("./data/flam_traits.csv")
 flam[nrow(flam)+1,"Scientific_Name"] <- "Pinus_contorta"
 flam[nrow(flam),c(2,4,6,8)] <-
-      colMeans (flam[grep("contorta",flam$Scientific_Name),c(2,4,6,8)],na.rm=TRUE)
+  colMeans (flam[grep("contorta",flam$Scientific_Name),c(2,4,6,8)],na.rm=TRUE)
 flam[nrow(flam),c(3,5,7,9)] = "Derived from Banwell & Varner"
 
 ####1.2 Merge component trait datasets###
 md <- #md = master data for traits
-      Reduce(function(x, y) 
-      merge(x, y, all=TRUE), 
-      list(read_csv("./data/species_list.csv"), 
-           read_csv("./data/bark_thickness_traits.csv"), 
-           read_csv("./data/try_traits.csv"),
-           read_csv("./data/S&A_traits.csv"),
-           flam
-      ) 
-)
+  Reduce(function(x, y) 
+    merge(x, y, all=TRUE), 
+    list(read_csv("./data/species_list.csv"), 
+         read_csv("./data/bark_thickness_traits.csv"), 
+         read_csv("./data/try_traits.csv"),
+         read_csv("./data/S&A_traits.csv"),
+         flam
+    ) 
+  )
 
 vars_of_interest <- #Identify variables of interest. "25.4" refers to dbh of tree in cm.
-      c("Scientific_Name","Code","CodeNum","California","Western","Gymno",
-        "Has_BA","Bark.Thickness.25.4.FOFEM2017","Plant.height",
-        "Self.pruning",
-        "Flame_ht", "Pct_consumed", "Flame_duration")
+  c("Scientific_Name","Code","CodeNum","California","Western","Gymno",
+    "Has_BA","Bark.Thickness.25.4.FOFEM2017","Plant.height",
+    "Self.pruning",
+    "Flame_ht", "Pct_consumed", "Flame_duration")
 
 d <- #working data for traits
-      md %>% #select variables of interest
-      dplyr::select(which(names(md)%in%vars_of_interest)) %>%
-      #Below, select study species, specifically western gymnosperms that have basal area data
-      dplyr::filter(Western==1 & Gymno==1 & Has_BA==1)
+  md %>% #select variables of interest
+  dplyr::select(which(names(md)%in%vars_of_interest)) %>%
+  #Below, select study species, specifically western gymnosperms that have basal area data
+  dplyr::filter(Western==1 & Gymno==1 & Has_BA==1)
 CodeNum <- d$CodeNum
 
 #tidy up working data frame
@@ -60,8 +60,8 @@ d$log_bt <- log10(d$bt) #Log transform to normalize
 d$log_fd <- log10(d$fd) #Log transform to reduce PIED outlier
 d_cors <- d[,c("log_bt","ph","sp","fh","pc","log_fd")]
 names(d_cors) <- 
-      c("log\n(bark thickness)","plant height","self pruning",
-        "flame height","percent\nconsumed", "log\n(flame duration)")
+  c("log\n(bark thickness)","plant height","self pruning",
+    "flame height","percent\nconsumed", "log\n(flame duration)")
 chart.Correlation(d_cors)
 #dev.copy2pdf(file="./figures/MS1/FigS1_trait_correlations.pdf") 
 rm(d_cors) #Clean up working environment
@@ -83,18 +83,18 @@ d$sp.pct <- (d$sp-min(d$sp)) / diff(range(d$sp))
 #d$fh.pct <- (d$fh-min(d$fh)) / diff(range(d$fh))
 #d$pc.pct <- (d$pc -min(d$pc)) / diff(range(d$pc))
 d$fh_pc.pct <- #Need "1-x" because most negative princomp scores are tallest flame lengths,
-      #with largest percent consumed.
-      1- (PC1-min(PC1)) / diff(range(PC1))
+  #with largest percent consumed.
+  1- (PC1-min(PC1)) / diff(range(PC1))
 #d$fd.pct <- #Need "1-x" because most resistant duration is shortest.
 #      1- (d$fd-min(d$fd)) / diff(range(d$fd)) 
 d$fd.pct <- #Need "1-x" because most resistant duration is shortest. 
-      #apply to log values to reduce PIED outlier
-      1- (d$log_fd-min(d$log_fd)) / diff(range(d$log_fd)) 
+  #apply to log values to reduce PIED outlier
+  1- (d$log_fd-min(d$log_fd)) / diff(range(d$log_fd)) 
 
 #Apply (across each row) the mean of the traits of interest, to calculate FRS 
 #(formerly weighted by trait completeness, but now have full dataset):
 d$frs <-
-      rowMeans(d[,c("bt.pct","ph.pct","sp.pct","fh_pc.pct", "fd.pct")]) 
+  rowMeans(d[,c("bt.pct","ph.pct","sp.pct","fh_pc.pct", "fd.pct")]) 
 
 d_t1 <- d[-c(2,9)] #Set up data frame for Table 1 (remove Code and log_fd).
 d_t1[,c(2,8:13)] <- round(d_t1[,c(2,8:13)],2)
@@ -113,31 +113,31 @@ d_frs_ranking$group <- c(rep("archetypal frequent-fire conifers",5),
 d_frs_ranking$frs_vis <- round(d_frs_ranking$frs,2)
 d_frs_ranking$frs_vis[c(5,6,10,11,13,14,15,16,17,18,21,23,24,25,28)] <- ""
 d_frs_ranking$Code <- #Formatting species codes per reviewer request
-      str_trunc(str_to_title(tolower(d_frs_ranking$Code)),7,ellipsis = "")
+  str_trunc(str_to_title(tolower(d_frs_ranking$Code)),7,ellipsis = "")
 p_frs_ranking <-
-      ggplot(d_frs_ranking) +
-      #geom_text(aes(x = rep(0, times = nrow(d)), 
-      #              y = frs, label = frs_vis ),
-      #          size = 3) +
-      geom_label(aes(x = c(seq(from = 0.1, by = 0.5, length.out = 5),
-                           seq(from = 0.1, by = 0.5, length.out = 3),
-                           seq(from = 0.1, by = 0.5, length.out = 11),
-                           seq(from = 0.1, by = 0.5, length.out = 10) ),
-                     y = frs, label = Code, fill = group),
-                 size = 3, hjust = 0) +
-      geom_tile(aes(x=rep(2,29),y=rep(2,29),fill = group)) + #Dummy data to override legend
-      #annotate("text", x = 0.3, y = 0.9, 
-      #         label = "fire resistance score (frs)", hjust = 0, size = 8)+
-      xlim(0, 6) + 
-      labs(x = "", y = "FRS", size = 18) +
-      theme_bw() +
-      scale_y_continuous(limits = c(0.14,0.85), breaks = seq(0.1,0.85,0.05)) +
-      scale_fill_manual(
-            values =rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(9,7,4,2)] ) +
-      theme(axis.text.y = element_text(size = 10), 
-            #axis.text.y = element_blank(),
-            axis.title.y = element_text(size = 14),
-            axis.text.x = element_blank(), legend.position = c(0.8,0.8))
+  ggplot(d_frs_ranking) +
+  #geom_text(aes(x = rep(0, times = nrow(d)), 
+  #              y = frs, label = frs_vis ),
+  #          size = 3) +
+  geom_label(aes(x = c(seq(from = 0.1, by = 0.5, length.out = 5),
+                       seq(from = 0.1, by = 0.5, length.out = 3),
+                       seq(from = 0.1, by = 0.5, length.out = 11),
+                       seq(from = 0.1, by = 0.5, length.out = 10) ),
+                 y = frs, label = Code, fill = group),
+             size = 3, hjust = 0) +
+  geom_tile(aes(x=rep(2,29),y=rep(2,29),fill = group)) + #Dummy data to override legend
+  #annotate("text", x = 0.3, y = 0.9, 
+  #         label = "fire resistance score (frs)", hjust = 0, size = 8)+
+  xlim(0, 6) + 
+  labs(x = "", y = "FRS", size = 18) +
+  theme_bw() +
+  scale_y_continuous(limits = c(0.14,0.85), breaks = seq(0.1,0.85,0.05)) +
+  scale_fill_manual(
+    values =rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(9,7,4,2)] ) +
+  theme(axis.text.y = element_text(size = 10), 
+        #axis.text.y = element_blank(),
+        axis.title.y = element_text(size = 14),
+        axis.text.x = element_blank(), legend.position = c(0.8,0.8))
 ggsave("figures/MS1/Fig2_p_frs_ranking.png", 
        p_frs_ranking, width=8, height=4, units="in")
 
@@ -165,6 +165,9 @@ groups <- dfr %>%
 pal <- rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(9,7,4,2)]
 
 pal <- c("darkred", "darkorange2", "forestgreen", "darkblue")
+pal <- c("#d7191c", "#fdae61", "#abd9e9", "#2c7bb6")
+pal <- c("#a50026", "#d9b24c", "#98cbd9", "#313695")
+pal <- c("#a50026", "darkorange2", "dodgerblue", "#313695")
 xmax <- 1.035
 p <- ggplot() +
   geom_rect(data=groups, 
@@ -208,14 +211,16 @@ rm(d_frs_ranking,p_frs_ranking)
 AOI <- extent(-2356217, -504717, 991792, 3172542)
 sppFileNames.study=paste0("s",CodeNum,".img") 
 ba.rasters.study <- sppFileNames.study %>%
-      paste0("../large_files/LiveBasalAreaRasters/", .) %>%
-      stack() %>%
-      crop(AOI) %>%
-      "/"(., 4.356)  # Convert sq ft/ac to sq m/ha
+  paste0("../large_files/LiveBasalAreaRasters/", .) %>%
+  stack() %>%
+  crop(AOI) %>%
+  "/"(., 4.356)  # Convert sq ft/ac to sq m/ha
 
 names(ba.rasters.study) <- d$Code      
 writeRaster(ba.rasters.study,"../large_files/ba.rasters.study.tif", 
             bylayer=FALSE, format='GTiff', overwrite=T)
+ba.rasters.study <- stack("../large_files/ba.rasters.study.tif")
+names(ba.rasters.study) <- d$Code      
 
 ####4b. Import the basal area layers for other tree species in the area ###
 ##"Other species" are trees that are not study species. Mostly includes hardwoods, plus conifers for which we have no trait data. Need this to calculate fraction of total basal area that is represented by study species. Don't need to do this unless the study species have changed.
@@ -225,14 +230,14 @@ sppCodes.other=md$Code[which(md$Western==1 & md$Has_BA==1 & !is.na(md$CodeNum) &
 sppCodeNums.other=md$CodeNum[which(md$Western==1 & md$Has_BA==1 & !is.na(md$CodeNum) & !md$Code%in%d$Code)] 
 sppFileNames.other=paste0("s",sppCodeNums.other,".img")
 ba.rasters.other <- sppFileNames.other %>%
-      paste0("../large_files/LiveBasalAreaRasters/", .) %>%
-      stack() %>%
-      crop(AOI) %>%
-      "/"(., 4.356)# Convert sq ft/ac to sq m/ha
+  paste0("../large_files/LiveBasalAreaRasters/", .) %>%
+  stack() %>%
+  crop(AOI) %>%
+  "/"(., 4.356)# Convert sq ft/ac to sq m/ha
 
 names(ba.rasters.other) <- sppCodes.other
 writeRaster(ba.rasters.other, "../large_files/ba.rasters.other.tif", bylayer=FALSE, 
-                  format='GTiff', overwrite=T)
+            format='GTiff', overwrite=T)
 
 #### 4c. Stack up the different rasters to get total basal area and filter out areas that are not conifer-dominated.###
 # Create raster stack for the study species, and for other species.
@@ -262,8 +267,8 @@ writeRaster(ba.tot.study,"../large_files/ba.tot.study.tif",overwrite=TRUE) #Larg
 #ba.tot.study <- raster("../large_files/ba.tot.study.tif") #If importing from file; total BA of study species
 #Create stack of BA weights (takes 25 minutes):
 ba.weights.stack <- #BA of given study species / BA of all study species
-      #ba.tot.study contains NA for cells where BA of study species is <50% total tree BA
-      ba.rasters.study %>% "/"(., ba.tot.study)
+  #ba.tot.study contains NA for cells where BA of study species is <50% total tree BA
+  ba.rasters.study %>% "/"(., ba.tot.study)
 #writeRaster(ba.weights.stack, "../large_files/ba.weights.stack.tif", overwrite=T)
 #ba.weights.stack  <- stack("../large_files/ba.weights.stack.tif")
 
@@ -311,8 +316,8 @@ rclmat.frg <- data.frame(from=c(-Inf,0.5,1.5,2.5,3.5,4.5,5.5),
 frg <- reclassify(frg,as.matrix(rclmat.frg),right=T) 
 
 rclmat.fri <- data.frame(from=c(-Inf,0,2,4,6,8,11,17,20,22),
-                      to=c(0,2,4,6,8,11,17,20,22,150),
-                      becomes=c(NA,5,15,25,35,50,100,200,500,NA))
+                         to=c(0,2,4,6,8,11,17,20,22,150),
+                         becomes=c(NA,5,15,25,35,50,100,200,500,NA))
 fri <- reclassify(fri, as.matrix(rclmat.fri), right=T)
 
 
@@ -324,7 +329,7 @@ frg <- frs; values(frg) <- values(frg_tmp)
 
 s <- stack(frs, fri, frg, ba.prop, ba.tot.other + ba.tot.study)
 s_d <- #s_d = stack of data. Slow, ~6 minutes
-      as.data.frame(rasterToPoints(s))
+  as.data.frame(rasterToPoints(s))
 names(s_d) <- c("x", "y", "frs", "fri", "frg", "ba_prop", "ba_tot")
 s_d <- filter(s_d, !is.na(frs), !is.na(fri))
 #write_rds(s_d,"../large_files/s_d.RDS") #write stack of data (fast)
@@ -342,17 +347,17 @@ getValues(frs)[c(c)]
 ####7. Fire resistance score map figure####
 
 usa <- getData("GADM", country="USA", level=1) %>%
-      spTransform(crs(ba.tot.study)) %>%
-      fortify() %>%
-      mutate(group=paste("usa", group))
+  spTransform(crs(ba.tot.study)) %>%
+  fortify() %>%
+  mutate(group=paste("usa", group))
 can <- getData("GADM", country="CAN", level=1) %>%
-      spTransform(crs(ba.tot.study)) %>%
-      fortify() %>%
-      mutate(group=paste("can", group))
+  spTransform(crs(ba.tot.study)) %>%
+  fortify() %>%
+  mutate(group=paste("can", group))
 mex <- getData("GADM", country="MEX", level=1) %>%
-      spTransform(crs(ba.tot.study)) %>%
-      fortify() %>%
-      mutate(group=paste("mex", group))
+  spTransform(crs(ba.tot.study)) %>%
+  fortify() %>%
+  mutate(group=paste("mex", group))
 borders <- rbind(usa, can, mex)
 
 minimalism <- theme(axis.text=element_blank(), 
@@ -368,57 +373,164 @@ view <- coord_cartesian(xlim=range(s_d$x),
                         ylim=range(s_d$y))
 
 p <- ggplot() + 
-      geom_polygon(data=borders, aes(long, lat, group=group),
-                   fill="gray95", color=NA) +
-      geom_raster(data=frsd,
-                  aes(x, y, fill=frs)) +
-      geom_path(data=borders, aes(long, lat, group=group),
-                size=.25) +
-      scale_fill_gradientn(
-            colors = rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(1:4,7:10)]) +
-      minimalism +
-      view +
-      guides(fill=guide_colourbar(barwidth=15)) +
-      labs(fill="Fire resistance score (FRS)  ")
+  geom_polygon(data=borders, aes(long, lat, group=group),
+               fill="gray95", color=NA) +
+  geom_raster(data=frsd,
+              aes(x, y, fill=frs)) +
+  geom_path(data=borders, aes(long, lat, group=group),
+            size=.25) +
+  scale_fill_gradientn(
+    colors = rev(colorRampPalette(brewer.pal(11,"Spectral"))(10))[c(1:4,7:10)]) +
+  minimalism +
+  view +
+  guides(fill=guide_colourbar(barwidth=15)) +
+  labs(fill="Fire resistance score (FRS)  ")
 ggsave("figures/MS1/Fig3.frs.png", p, width=7, height=8.5, units="in") # (slow)
+
+
+i <- 75
+p <- ggplot() + 
+  geom_polygon(data=borders, aes(long, lat, group=group),
+               fill=paste0("gray", i), color=NA) +
+  geom_raster(data=frsd,
+              aes(x, y, fill=frs)) +
+  geom_path(data=borders, aes(long, lat, group=group),
+            size=.25) +
+  scale_fill_gradientn(colors = rev(c("#a50026", "#d73027", "#f46d43", "#fdae61", "#fee090", "#ffffbf", 
+                                      "#e0f3f8", "#abd9e9", "#74add1", "#4575b4", "#313695"))) +
+  minimalism +
+  view +
+  guides(fill=guide_colourbar(barwidth=15)) +
+  labs(fill="Fire resistance score (FRS)  ")
+ggsave(paste0("figures/MS1/Fig3.frs_RdYlBu", i, ".png"), 
+       p, width=7, height=8.5, units="in") # (slow)
+
+
+
+for(pal in LETTERS[2:3]){
+  p <- ggplot() + 
+    geom_polygon(data=borders, aes(long, lat, group=group),
+                 fill="gray80", color=NA) +
+    geom_raster(data=frsd,
+                aes(x, y, fill=frs)) +
+    geom_path(data=borders, aes(long, lat, group=group),
+              size=.25) +
+    scale_fill_viridis_c(option=pal) +
+    minimalism +
+    view +
+    guides(fill=guide_colourbar(barwidth=15)) +
+    labs(fill="Fire resistance score (FRS)  ")
+  ggsave(paste0("figures/MS1/Fig3.frs_viridis", pal, ".png"), 
+         p, width=7, height=8.5, units="in") # (slow)
+}
+
+for(i in seq(0, 100, 10)){
+  p <- ggplot() + 
+    geom_polygon(data=borders, aes(long, lat, group=group),
+                 fill=paste0("gray", i), color=NA) +
+    geom_raster(data=frsd,
+                aes(x, y, fill=frs)) +
+    geom_path(data=borders, aes(long, lat, group=group),
+              size=.25) +
+    scale_fill_gradientn(colors = rev(c("#a50026", "#d73027", "#f46d43", "#fdae61", "#fee090", "#ffffbf", 
+                                        "#e0f3f8", "#abd9e9", "#74add1", "#4575b4", "#313695"))) +
+    minimalism +
+    view +
+    guides(fill=guide_colourbar(barwidth=15)) +
+    labs(fill="Fire resistance score (FRS)  ")
+  ggsave(paste0("figures/MS1/Fig3.frs_RdYlBu", i, ".png"), 
+         p, width=7, height=8.5, units="in") # (slow)
+}
+
+
+i <- 95
+p <- ggplot() + 
+  geom_polygon(data=borders, aes(long, lat, group=group),
+               fill=paste0("gray", i), color=NA) +
+  geom_raster(data=frsd,
+              aes(x, y, fill=frs)) +
+  geom_path(data=borders, aes(long, lat, group=group),
+            size=.25) +
+  scale_fill_gradientn(colors = rev(c("#a50026", "#f46d43", 
+                                      "#fee090",
+                                      "#e0f3f8", 
+                                      "#74add1", "#313695"))) +
+  minimalism +
+  view +
+  guides(fill=guide_colourbar(barwidth=15)) +
+  labs(fill="Fire resistance score (FRS)  ")
+ggsave(paste0("figures/MS1/Fig3.frs_RdYlBu_v1.png"), 
+       p, width=7, height=8.5, units="in") # (slow)
+p <- ggplot() + 
+  geom_polygon(data=borders, aes(long, lat, group=group),
+               fill=paste0("gray", i), color=NA) +
+  geom_raster(data=frsd,
+              aes(x, y, fill=frs)) +
+  geom_path(data=borders, aes(long, lat, group=group),
+            size=.25) +
+  scale_fill_gradientn(colors = c("darkblue", "#1eb8ff", "darkgoldenrod2", "darkred")) +
+  minimalism +
+  view +
+  guides(fill=guide_colourbar(barwidth=15)) +
+  labs(fill="Fire resistance score (FRS)  ")
+ggsave(paste0("figures/MS1/Fig3.frs_RdYlBu_v2.png"), 
+       p, width=7, height=8.5, units="in") # (slow)
+
+
+
+p <- ggplot() + 
+  geom_polygon(data=borders, aes(long, lat, group=group),
+               fill="gray95", color=NA) +
+  geom_raster(data=frsd,
+              aes(x, y, fill=frs)) +
+  geom_path(data=borders, aes(long, lat, group=group),
+            size=.25) +
+  scale_fill_gradientn(colors=rev(c("#ffdb4d", "red", "blue", "#3bc1ff"))) +
+  minimalism +
+  view +
+  guides(fill=guide_colourbar(barwidth=15)) +
+  labs(fill="Fire resistance score (FRS)  ")
+ggsave("figures/MS1/Fig3.frs_GdRdBu.png", p, width=7, height=8.5, units="in") # (slow)
+
+
 
 
 ####8. Supplementary map figures####
 ###FRG map figure
 p_frg <- ggplot() + 
-      geom_polygon(data=borders, aes(long, lat, group=group),
-                   fill="gray95", color=NA) +
-      geom_raster(data=s_d,
-                  aes(x, y, fill=factor(frg))) +
-      geom_path(data=borders, aes(long, lat, group=group),
-                size=.25) +
-      scale_fill_manual(values=c("1"="darkgoldenrod2","3"="gray","5"="darkcyan")) +
-      minimalism +
-      view +
-      labs(fill="Fire regime group\n")
+  geom_polygon(data=borders, aes(long, lat, group=group),
+               fill="gray95", color=NA) +
+  geom_raster(data=s_d,
+              aes(x, y, fill=factor(frg))) +
+  geom_path(data=borders, aes(long, lat, group=group),
+            size=.25) +
+  scale_fill_manual(values=c("1"="darkgoldenrod2","3"="gray","5"="darkcyan")) +
+  minimalism +
+  view +
+  labs(fill="Fire regime group\n")
 #ggsave("figures/MS1/FigS2.frg.png", p_frg, width=7, height=9, units="in")
 
 ###FRI map figure
 p_fri <- ggplot() + 
-      geom_polygon(data=borders, aes(long, lat, group=group),
-                   fill="gray95", color=NA) +
-      geom_raster(data=s_d,
-                  aes(x, y, fill=fri)) +
-      geom_path(data=borders, aes(long, lat, group=group),
-                size=.25) +
-      scale_fill_viridis(option="B", trans="log10", breaks=c(1,3,10,30,100,300,1000)) +
-      minimalism +
-      view +
-      guides(fill=guide_colourbar(barwidth=15)) +
-      labs(fill="years\n",
-           title="\nFire return interval")
+  geom_polygon(data=borders, aes(long, lat, group=group),
+               fill="gray95", color=NA) +
+  geom_raster(data=s_d,
+              aes(x, y, fill=fri)) +
+  geom_path(data=borders, aes(long, lat, group=group),
+            size=.25) +
+  scale_fill_viridis(option="B", trans="log10", breaks=c(1,3,10,30,100,300,1000)) +
+  minimalism +
+  view +
+  guides(fill=guide_colourbar(barwidth=15)) +
+  labs(fill="years\n",
+       title="\nFire return interval")
 #ggsave("figures/MS1/FigS3.fri.png", p, width=7, height=9, units="in")
 
 
 
 ####9.Analyze and plot frs-fire regime relationships and "mismatches" (fast)####
 sd.sub <- #Randomly subsample 1% of the df (134k [~119k?] cells)
-      s_d[sample(nrow(s_d), nrow(s_d)*0.01), ]
+  s_d[sample(nrow(s_d), nrow(s_d)*0.01), ]
 sd.sub$frg[sd.sub$frg>5|sd.sub$frg==2|sd.sub$frg==4]=NA 
 #Set certain FRG's to NA (e.g. rock, barren; FRG>5). Also remove the FRG 2's and 4's (grasslands and chaparral predominantly).
 table(sd.sub$fri,sd.sub$frg)  
@@ -427,28 +539,28 @@ table(sd.sub$fri,sd.sub$frg)
 #Plot frs~fri (fire return interval)
 sd.sub$trait=sd.sub$frs #Change to trait of interest (also change axis label)
 p_fri_frs <-
-      ggplot(sd.sub)+
-      geom_boxplot(aes(x=fri,y=trait,group=fri),notch=F)+ 
-      geom_line(aes(x=fri,y=trait),stat="smooth",method="lm",col="black")+
-      scale_x_log10(breaks=c(5,15,25,35,50,100,200,500))+
-      annotation_logticks(sides="b")+
-      labs(y="FRS",x="Median fire return interval")+
-      theme_bw()+
-      theme(axis.text=element_text(size=12,color='black'),axis.title=element_text(size=14))
+  ggplot(sd.sub)+
+  geom_boxplot(aes(x=fri,y=trait,group=fri),notch=F)+ 
+  geom_line(aes(x=fri,y=trait),stat="smooth",method="lm",col="black")+
+  scale_x_log10(breaks=c(5,15,25,35,50,100,200,500))+
+  annotation_logticks(sides="b")+
+  labs(y="FRS",x="Median fire return interval")+
+  theme_bw()+
+  theme(axis.text=element_text(size=12,color='black'),axis.title=element_text(size=14))
 #dev.copy2pdf(file="./figures/MS1/Fig2_Fire.resistance~MFRI.pdf") 
 FRI.m=lm(frs~fri,data=sd.sub)
 
 #Plot Plot frs~frg (fire regime group)
 sd.sub$trait=sd.sub$frs #Change to trait of interest (also change axis label)
 p_frg_frs <-
-      ggplot(sd.sub[!is.na(sd.sub$frg),])+
-      geom_boxplot(aes(x=factor(frg,labels=c("1: Frequent \n low-severity", 
-                                             "3: Mod. frequency/ \n severity",
-                                             "5: Infrequent \n high-severity")),
-                       y=trait),notch=F)+ 
-      labs(y="FRS",x="Fire Regime Group")+
-      theme_bw()+
-      theme(axis.text=element_text(size=12,color='black'),axis.title=element_text(size=14))
+  ggplot(sd.sub[!is.na(sd.sub$frg),])+
+  geom_boxplot(aes(x=factor(frg,labels=c("1: Frequent \n low-severity", 
+                                         "3: Mod. frequency/ \n severity",
+                                         "5: Infrequent \n high-severity")),
+                   y=trait),notch=F)+ 
+  labs(y="FRS",x="Fire Regime Group")+
+  theme_bw()+
+  theme(axis.text=element_text(size=12,color='black'),axis.title=element_text(size=14))
 #dev.copy2pdf(file="./figures/MS1/Fig3_Fire.resistance~FRG.pdf")
 #FRG.m=aov(frs~factor(frg),data=sd.sub)
 #TukeyHSD(FRG.m)
@@ -477,57 +589,57 @@ s_d[which(s_d$frs.intf>0.8),"mismatch"]="r.intf" #Resistant, intermediate-fire
 s_d[which(s_d$frs.inff>0.8),"mismatch"]="r.inff" #Resistant, infrequent-fire
 
 p_mismatches <- 
-      ggplot() + 
-      geom_polygon(data=borders, aes(long, lat, group=group),
-                   fill="gray95", color=NA) +
-      geom_raster(data=s_d,#[which(!is.na(s_d$mismatch)),],
-                  aes(x, y, fill=mismatch)) +
-      geom_path(data=borders, aes(long, lat, group=group),
-                size=.25) +
-      scale_fill_manual(labels = c("resistant-infrequent", "resistant-intermediate",
-                                   "sensitive-frequent", "sensitive-intermediate"), 
-                        values = c("#76AB99","#a6d96a","#d7191c","#fdae61"),
-                        breaks = c("r.inff", "r.intf",
-                                   "s.ff", "s.intf"),
-                        na.value="gray85") +
-      minimalism +
-      view +
-      theme(legend.direction="vertical") +
-      labs(fill="\ncategory (FRS-FRI)                                                                                                                 ",
-           title="\n      Mismatches between FRS and FRI")
+  ggplot() + 
+  geom_polygon(data=borders, aes(long, lat, group=group),
+               fill="gray95", color=NA) +
+  geom_raster(data=s_d,#[which(!is.na(s_d$mismatch)),],
+              aes(x, y, fill=mismatch)) +
+  geom_path(data=borders, aes(long, lat, group=group),
+            size=.25) +
+  scale_fill_manual(labels = c("resistant-infrequent", "resistant-intermediate",
+                               "sensitive-frequent", "sensitive-intermediate"), 
+                    values = c("#76AB99","#a6d96a","#d7191c","#fdae61"),
+                    breaks = c("r.inff", "r.intf",
+                               "s.ff", "s.intf"),
+                    na.value="gray85") +
+  minimalism +
+  view +
+  theme(legend.direction="vertical") +
+  labs(fill="\ncategory (FRS-FRI)                                                                                                                 ",
+       title="\n      Mismatches between FRS and FRI")
 ggsave("figures/MS1/FigS6.mismatches.png", p_mismatches, width=7, height=9, units="in")
 
 #Plot frs~fri (fire return interval with coloring for inset figure)
 sd.sub <- #Randomly subsample 1% of the df (134k [~119k?] cells)
-      s_d[sample(nrow(s_d), nrow(s_d)*0.01), ]
+  s_d[sample(nrow(s_d), nrow(s_d)*0.01), ]
 sd.sub$frg[sd.sub$frg>5|sd.sub$frg==2|sd.sub$frg==4]=NA 
 #Set certain FRG's to NA (e.g. rock, barren; FRG>5). Also remove the FRG 2's and 4's (grasslands and chaparral predominantly).
 p_fri_frs_inset <-
-      ggplot(sd.sub)+
-      geom_rect(aes(xmin = 4, xmax = 20, 
-                    ymin = .1,
-                    ymax = range(s_d[which(s_d$mismatch=="s.ff"),"frs"])[2] ),
-                color = "#d7191c", fill = "#d7191c") +
-      geom_rect(aes(xmin = 41, xmax = 145, 
-                    ymin = .1,
-                    ymax = range(s_d[which(s_d$mismatch=="s.intf"),"frs"])[2] ),
-                color = "#fdae61", fill = "#fdae61") +
-      geom_rect(aes(xmin = 41, xmax = 145, 
-                    ymin = range(s_d[which(s_d$mismatch=="r.intf"),"frs"])[1],
-                    ymax = .9),
-                color = "#a6d96a", fill = "#a6d96a") +
-      geom_rect(aes(xmin = 155, xmax = 300, 
-                    ymin = range(s_d[which(s_d$mismatch=="r.inff"),"frs"])[1],
-                    ymax = .9),
-                color = "#76AB99", fill = "#76AB99") +
-      geom_boxplot(aes(x=fri,y=frs,group=fri),notch=F, fill="black", alpha=.15)+ 
-      scale_x_log10(breaks=c(5,15,50,100,200,500))+
-      annotation_logticks(sides="b")+
-      labs(y="FRS",x="Median fire return interval")+
-      theme_bw()+
-      theme(axis.text=element_text(size=12,color='black'),
-            axis.title=element_text(size=14),
-            plot.background=element_rect(fill=NA, color=NA))
+  ggplot(sd.sub)+
+  geom_rect(aes(xmin = 4, xmax = 20, 
+                ymin = .1,
+                ymax = range(s_d[which(s_d$mismatch=="s.ff"),"frs"])[2] ),
+            color = "#d7191c", fill = "#d7191c") +
+  geom_rect(aes(xmin = 41, xmax = 145, 
+                ymin = .1,
+                ymax = range(s_d[which(s_d$mismatch=="s.intf"),"frs"])[2] ),
+            color = "#fdae61", fill = "#fdae61") +
+  geom_rect(aes(xmin = 41, xmax = 145, 
+                ymin = range(s_d[which(s_d$mismatch=="r.intf"),"frs"])[1],
+                ymax = .9),
+            color = "#a6d96a", fill = "#a6d96a") +
+  geom_rect(aes(xmin = 155, xmax = 300, 
+                ymin = range(s_d[which(s_d$mismatch=="r.inff"),"frs"])[1],
+                ymax = .9),
+            color = "#76AB99", fill = "#76AB99") +
+  geom_boxplot(aes(x=fri,y=frs,group=fri),notch=F, fill="black", alpha=.15)+ 
+  scale_x_log10(breaks=c(5,15,50,100,200,500))+
+  annotation_logticks(sides="b")+
+  labs(y="FRS",x="Median fire return interval")+
+  theme_bw()+
+  theme(axis.text=element_text(size=12,color='black'),
+        axis.title=element_text(size=14),
+        plot.background=element_rect(fill=NA, color=NA))
 ggsave("figures/MS1/FigS6.mismatches_inset.png", p_fri_frs_inset, width=5, height=4.5, units="in")
 
 ### the above figure inset into the map figure
