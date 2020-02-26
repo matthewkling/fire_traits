@@ -50,6 +50,7 @@ CodeNum <- d$CodeNum
 #tidy up working data frame
 d <- d[,c(1,2,8,9,10,12,13,11)]
 names(d) <- c("Scientific_Name", "Code", "bt", "ph", "sp", "fh", "pc", "fd")
+d$Scientific_Name[d$Scientific_Name == "Chamaecyparis_lawsonia"] <- "Chamaecyparis_lawsoniana"
 
 rm(flam,vars_of_interest) #Clean up working environment
 
